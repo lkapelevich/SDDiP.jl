@@ -1,5 +1,13 @@
-using SDDiP
-using Base.Test
+using Base.Test, SDDiP, JuMP, GLPKMathProgInterface, Ipopt
 
-# write your own tests here
-@test 1 == 2
+@testset "Lagrangian" begin
+    include("Lagrangian.jl")
+end
+
+@testset "SDDiP" begin
+    include("SDDiP.jl")
+end
+
+@testset "@binarystate" begin
+    include("binarystate.jl")
+end

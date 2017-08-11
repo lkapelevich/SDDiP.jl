@@ -1,5 +1,16 @@
 module SDDiP
 
-# package code goes here
+export setSDDiPsolver!,
+Pattern,
+@binarystate, @binarystates
 
-end # module
+# Our Lagrangian solver
+include(joinpath(dirname(@__FILE__),"Lagrangian","Lagrangian.jl"))
+
+using SDDP, JuMP, Compat, Reexport
+@reexport using .Lagrangian
+
+include("solver.jl")
+include("binary_expansion.jl")
+include("binarystate.jl")
+end
