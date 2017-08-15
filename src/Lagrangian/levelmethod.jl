@@ -13,11 +13,11 @@ solver         A quadratic solver
 maxit          To terminate the method
 """
 immutable LevelMethod{S<:JuMP.MathProgBase.AbstractMathProgSolver,T<:Tolerance} <: AbstractLagrangianMethod
-    initialbound::Float64                           # starting bound for the Lagrangian dual problem
-    level::Float64                                  # parameter between 0 and 1
-    tol::T                                  # tolerance for terminating
-    solver::S # should be a quadratic solver
-    maxit::Int                                      # a cap on iterations
+    initialbound::Float64   # starting bound for the Lagrangian dual problem
+    level::Float64          # parameter between 0 and 1
+    tol::T                  # tolerance for terminating
+    solver::S               # should be a quadratic solver
+    maxit::Int              # a cap on iterations
 end
 function LevelMethod(initialbound::Float64; level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=10_000)
     if quadsolver == UnsetSolver()
@@ -85,7 +85,7 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
     while iteration < levelmethod.maxit
         iteration += 1
         # Evaluate the real function and a subgradient
-        # m.internalModelLoaded = false
+        m.internalModelLoaded = false # need to do this smarter...
         f_actual, fdash = solve_primal(m, lp, π)
 
         # Improve the model, undo level bounds on θ, and update best function value so far
@@ -105,7 +105,7 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
             end
         end
         # Get a bound from the approximate model
-        # approx_model.internalModelLoaded = false
+        approx_model.internalModelLoaded = false  # need to do this smarter...
         @objective(approx_model, dualsense, θ)
         @assert solve(approx_model) == :Optimal
         f_approx = getobjectivevalue(approx_model)::Float64
@@ -125,12 +125,12 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
         end
         # Form a level
         if dualsense == :Min
-            level = f_approx + (gap * lp.method.level + tol.val/10)
-
+            level = f_approx + (gap * lp.method.level + tol.val/10.0)
+            setupperbound(θ, level)
         else
-            level = f_approx - (gap * lp.method.level + tol.val/10)
+            level = f_approx - (gap * lp.method.level + tol.val/10.0)
+            setlowerbound(θ, level)
         end
-        setupperbound(θ, level::Float64)
 
         # Get the next iterate
         # approx_model.internalModelLoaded = false

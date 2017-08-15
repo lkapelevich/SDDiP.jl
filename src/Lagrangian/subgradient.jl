@@ -11,13 +11,13 @@ tol            Tolerance for terminating
 wait           A parameter for reducing step sizes
 maxit          A cap on iterations
 """
-immutable SubgradientMethod <: AbstractLagrangianMethod
+immutable SubgradientMethod{T<:Tolerance} <: AbstractLagrangianMethod
     initialbound::Float64
-    tol::Tolerance
+    tol::T
     wait::Int
     maxit::Int
 end
-function SubgradientMethod(initialbound::Float64; tol=Unit(1e-6), wait=30, maxit=1e4)
+function SubgradientMethod(initialbound::Float64; tol=Unit(1e-6), wait=30, maxit=10_000)
     SubgradientMethod(initialbound, tol, wait, maxit)
 end
 
@@ -44,17 +44,13 @@ Solve the Lagrangian dual of a linear program using subgradient descent.
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!(lp::LinearProgramData{SubgradientMethod}, m::JuMP.Model, π::Vector{Float64})
-
-    # old_solvehook = m.solvehook
-    # JuMP.setsolvehook(m, specialised_solve)
-    # then JuMP.setsolvehook(m, old_solvehook)
+function lagrangian_method!{T}(lp::LinearProgramData{SubgradientMethod{T}}, m::JuMP.Model, π::Vector{Float64})
 
     subgradient = lp.method
     tol = subgradient.tol
 
     # Stepping parameter
-    μ = 2.
+    μ = 2.0
     incumbent = subgradient.initialbound
     # A bound, the strongest bound so far, and a bound we can check against every lp.wait iterations
     bound = best_bound = cached_bound = -Inf
