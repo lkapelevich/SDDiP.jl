@@ -72,7 +72,7 @@ function solve_primal{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Mod
         subgradient = -d.slacks
     end
     @assert solve(m, ignore_solve_hook=true) == :Optimal
-    getobjectivevalue(m), getvalue(subgradient)
+    getobjectivevalue(m)::Float64, getvalue(subgradient)::Vector{Float64}
 end
 
 immutable UnsetSolver <: JuMP.MathProgBase.AbstractMathProgSolver end
