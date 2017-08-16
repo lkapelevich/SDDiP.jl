@@ -12,18 +12,18 @@ tol            Tolerance: we stop when the gap between our approximation of the 
 solver         A quadratic solver
 maxit          To terminate the method
 """
-immutable LevelMethod <: AbstractLagrangianMethod
-    initialbound::Float64                           # starting bound for the Lagrangian dual problem
-    level::Float64                                  # parameter between 0 and 1
-    tol::Tolerance                                  # tolerance for terminating
-    solver::JuMP.MathProgBase.AbstractMathProgSolver # should be a quadratic solver
-    maxit::Int                                      # a cap on iterations
+immutable LevelMethod{S<:JuMP.MathProgBase.AbstractMathProgSolver,T<:Tolerance} <: AbstractLagrangianMethod
+    initialbound::Float64   # starting bound for the Lagrangian dual problem
+    level::Float64          # parameter between 0 and 1
+    tol::T                  # tolerance for terminating
+    solver::S               # should be a quadratic solver
+    maxit::Int              # a cap on iterations
 end
-function LevelMethod(initialbound::Float64; level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=1e4)
+function LevelMethod(initialbound::Float64; level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=10_000)
     if quadsolver == UnsetSolver()
         error("You must specify a MathProgBase solver that can handle quadratic objective functions.")
     end
-    if 0. <= level <= 1.
+    if 0.0 <= level <= 1.0
         return LevelMethod(initialbound, level, tol, quadsolver, maxit)
     else
         error("Level parameter must be between 0 and 1.")
@@ -43,18 +43,17 @@ The Level Method (Lemarechal, Nemirovskii, Nesterov, 1992).
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!(lp::LinearProgramData{LevelMethod}, m::JuMP.Model, π::Vector{Float64})
+function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuMP.Model, π::Vector{Float64})
 
     levelmethod = lp.method
-    N = length(π)
-    tol = levelmethod.tol
-
+    N           = length(π)
+    tol         = levelmethod.tol
     # Gap between approximate model and true function each iteration
-    gap = Inf
+    gap       = Inf
     # Dual problem has the opposite sense to the primal
     dualsense = getdualsense(m)
     # Let's make new storage for the best multiplier found so far
-    bestmult = copy(π)
+    bestmult  = copy(π)
 
     # The approximate model will be a made from linear hyperplanes
     approx_model = Model(solver=levelmethod.solver)
@@ -66,9 +65,9 @@ function lagrangian_method!(lp::LinearProgramData{LevelMethod}, m::JuMP.Model, �
     # There are sign restrictions on some duals
     for (i, sense) in enumerate(lp.senses)
         if sense == :ge
-            setupperbound(x[i], 0)
+            setupperbound(x[i], 0.0)
         elseif sense == :le
-            setlowerbound(x[i], 0)
+            setlowerbound(x[i], 0.0)
         end
     end
     # Let's not be unbounded from the beginning
@@ -85,7 +84,7 @@ function lagrangian_method!(lp::LinearProgramData{LevelMethod}, m::JuMP.Model, �
     while iteration < levelmethod.maxit
         iteration += 1
         # Evaluate the real function and a subgradient
-        m.internalModelLoaded = false
+        # m.internalModelLoaded = false # need to do this smarter...
         f_actual, fdash = solve_primal(m, lp, π)
 
         # Improve the model, undo level bounds on θ, and update best function value so far
@@ -105,40 +104,44 @@ function lagrangian_method!(lp::LinearProgramData{LevelMethod}, m::JuMP.Model, �
             end
         end
         # Get a bound from the approximate model
-        approx_model.internalModelLoaded = false
         @objective(approx_model, dualsense, θ)
         @assert solve(approx_model) == :Optimal
-        f_approx = getobjectivevalue(approx_model)
+        f_approx = getobjectivevalue(approx_model)::Float64
         # Check the gap
         gap = abs(best_actual - f_approx)
-        # Stop if best_actual ≈ f_approx
-        # Note: if fdash ≈ ̃0, then we expect that best_actual ≈ f_approx anyway.
-        # We still check for this condition in case the solver allows a component
-        # of ̃x to get very large, so that dot(fdash, x) is nonzero and f_approx is incorrect.
+        #=
+            Stop if best_actual ≈ f_approx
+            Note: if fdash ≈ ̃0, then we expect that best_actual ≈ f_approx
+            anyway. We still check for this condition in case the solver allows
+            a component of ̃x to get very large, so that dot(fdash, x) is nonzero
+            and f_approx is incorrect.
+        =#
         if closetozero(gap, best_actual, f_approx, tol) || isclose(norm(fdash), 0.0, tol)
+            π .= bestmult
             if dualsense == :Min
-                π .= -1 * bestmult # bestmult not the same as getvalue(x), approx_model may have just gotten lucky
-            else
-                π .= bestmult
+                π .*= -1 # bestmult not the same as getvalue(x), approx_model may have just gotten lucky
             end
-            return :Optimal, best_actual
+            return :Optimal, best_actual::Float64
         end
         # Form a level
         if dualsense == :Min
-            level = f_approx + gap * lp.method.level + tol.val/10
+            level = f_approx + (gap * lp.method.level + tol.val/10.0)
             setupperbound(θ, level)
         else
-            level = f_approx - gap * lp.method.level - tol.val/10
+            level = f_approx - (gap * lp.method.level + tol.val/10.0)
             setlowerbound(θ, level)
         end
+
         # Get the next iterate
-        approx_model.internalModelLoaded = false
+        # TODO: why does it have to be quadratic?
+        #   - solve using a lazy hyperplane approach
+        #   - use L1 norm instead
         @objective(approx_model, Min, sum((π[i]-x[i])^2 for i=1:N))
         @assert solve(approx_model) == :Optimal
         # Update π for this iteration
         π .= getvalue(x)
     end
     warn("Lagrangian relaxation did not solve properly.")
-    return :IterationLimit, f_approx
+    return :IterationLimit, f_approx::Float64
 
 end

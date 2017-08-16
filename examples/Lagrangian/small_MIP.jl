@@ -95,7 +95,7 @@ function solve_simple_MIP()
 
     # Use subgradient descent
     π0 = -[15.0; 20.0]
-    subgradient   = SubgradientMethod(objectivebound)
+    subgradient = SubgradientMethod(objectivebound)
     # Data for the Lagrangian solver
     MIPdata = LinearProgramData(model.obj,            # objective
                                 complicating_constrs, # relaxed constraints
