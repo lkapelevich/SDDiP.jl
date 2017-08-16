@@ -46,15 +46,14 @@ The Level Method (Lemarechal, Nemirovskii, Nesterov, 1992).
 function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuMP.Model, π::Vector{Float64})
 
     levelmethod = lp.method
-    N = length(π)
-    tol = levelmethod.tol
-
+    N           = length(π)
+    tol         = levelmethod.tol
     # Gap between approximate model and true function each iteration
-    gap = Inf
+    gap       = Inf
     # Dual problem has the opposite sense to the primal
     dualsense = getdualsense(m)
     # Let's make new storage for the best multiplier found so far
-    bestmult = copy(π)
+    bestmult  = copy(π)
 
     # The approximate model will be a made from linear hyperplanes
     approx_model = Model(solver=levelmethod.solver)
@@ -85,7 +84,7 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
     while iteration < levelmethod.maxit
         iteration += 1
         # Evaluate the real function and a subgradient
-        m.internalModelLoaded = false # need to do this smarter...
+        # m.internalModelLoaded = false # need to do this smarter...
         f_actual, fdash = solve_primal(m, lp, π)
 
         # Improve the model, undo level bounds on θ, and update best function value so far
@@ -105,21 +104,22 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
             end
         end
         # Get a bound from the approximate model
-        approx_model.internalModelLoaded = false  # need to do this smarter...
         @objective(approx_model, dualsense, θ)
         @assert solve(approx_model) == :Optimal
         f_approx = getobjectivevalue(approx_model)::Float64
         # Check the gap
         gap = abs(best_actual - f_approx)
-        # Stop if best_actual ≈ f_approx
-        # Note: if fdash ≈ ̃0, then we expect that best_actual ≈ f_approx anyway.
-        # We still check for this condition in case the solver allows a component
-        # of ̃x to get very large, so that dot(fdash, x) is nonzero and f_approx is incorrect.
+        #=
+            Stop if best_actual ≈ f_approx
+            Note: if fdash ≈ ̃0, then we expect that best_actual ≈ f_approx
+            anyway. We still check for this condition in case the solver allows
+            a component of ̃x to get very large, so that dot(fdash, x) is nonzero
+            and f_approx is incorrect.
+        =#
         if closetozero(gap, best_actual, f_approx, tol) || isclose(norm(fdash), 0.0, tol)
+            π .= bestmult
             if dualsense == :Min
-                π .= -1 * bestmult # bestmult not the same as getvalue(x), approx_model may have just gotten lucky
-            else
-                π .= bestmult
+                π .*= -1 # bestmult not the same as getvalue(x), approx_model may have just gotten lucky
             end
             return :Optimal, best_actual::Float64
         end
@@ -133,7 +133,9 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
         end
 
         # Get the next iterate
-        # approx_model.internalModelLoaded = false
+        # TODO: why does it have to be quadratic?
+        #   - solve using a lazy hyperplane approach
+        #   - use L1 norm instead
         @objective(approx_model, Min, sum((π[i]-x[i])^2 for i=1:N))
         @assert solve(approx_model) == :Optimal
         # Update π for this iteration

@@ -64,11 +64,20 @@ const PrimalOutput = Tuple{Float64, Vector{Float64}}
 # For a fixed π, solve minₓ{L = cᵀx + πᵀ(Ax-b)} or maxₓ{L = cᵀx - πᵀ(Ax-b)}
 function solve_primal{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
     # Set the Lagrangian the objective in the primal model
+
     if getobjectivesense(m) == :Min
-        @objective(m, :Min, d.obj + dot(π, d.slacks))
+        if length(d.obj.qvars1) == 0
+            @objective(m, :Min, d.obj.aff + dot(π, d.slacks))
+        else
+            @objective(m, :Min, d.obj + dot(π, d.slacks))
+        end
         subgradient = d.slacks
     else
-        @objective(m, :Max, d.obj - dot(π, d.slacks))
+        if length(d.obj.qvars1) == 0
+            @objective(m, :Max, d.obj.aff - dot(π, d.slacks))
+        else
+            @objective(m, :Max, d.obj - dot(π, d.slacks))
+        end
         subgradient = -d.slacks
     end
     @assert solve(m, ignore_solve_hook=true) == :Optimal
