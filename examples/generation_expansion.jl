@@ -78,12 +78,12 @@ m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP
 
     # Solve with the level method as the Lagrangian solver
     setSDDiPsolver!(sp, method=LevelMethod(5e6, quadsolver=IpoptSolver(print_level=0)),
-                        pattern = Pattern(benders=1, lagrangian=3, strengthened_benders=0),
+                        pattern = Pattern(benders=1, lagrangian=5, strengthened_benders=1),
                         LPsolver = GLPKSolverLP()
                         )
 
 end
 
 srand(11111)
-status = solve(m, max_iterations=70)
+status = solve(m, max_iterations=60)
 @assert isapprox(getbound(m), 460533, atol=1e3)

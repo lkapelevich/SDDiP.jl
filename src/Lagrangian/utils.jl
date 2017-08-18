@@ -59,25 +59,29 @@ function closetozero(gap::Float64, f1::Float64, f2::Float64, tol::Unit)::Bool
     return abs(gap) / (1 + min(abs(f1), abs(f2))) < tol.val
 end
 
-const PrimalOutput = Tuple{Float64, Vector{Float64}}
-
-# For a fixed π, solve minₓ{L = cᵀx + πᵀ(Ax-b)} or maxₓ{L = cᵀx - πᵀ(Ax-b)}
-function solve_primal{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
-    # Set the Lagrangian the objective in the primal model
-
+function setlagrangianobjective!{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
     if getobjectivesense(m) == :Min
         if length(d.obj.qvars1) == 0
             @objective(m, :Min, d.obj.aff + dot(π, d.slacks))
         else
             @objective(m, :Min, d.obj + dot(π, d.slacks))
         end
-        subgradient = d.slacks
     else
         if length(d.obj.qvars1) == 0
             @objective(m, :Max, d.obj.aff - dot(π, d.slacks))
         else
             @objective(m, :Max, d.obj - dot(π, d.slacks))
         end
+    end
+end
+
+# For a fixed π, solve minₓ{L = cᵀx + πᵀ(Ax-b)} or maxₓ{L = cᵀx - πᵀ(Ax-b)}
+function solve_primal{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
+    # Set the Lagrangian the objective in the primal model
+    setlagrangianobjective!(m, d, π)
+    if getobjectivesense(m) == :Min
+        subgradient = d.slacks
+    else
         subgradient = -d.slacks
     end
     @assert solve(m, ignore_solve_hook=true) == :Optimal

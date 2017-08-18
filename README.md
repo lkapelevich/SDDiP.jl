@@ -18,7 +18,7 @@ Integer Programs with Binary State Variables.
 Pkg.clone("https://github.com/lkapelevich/SDDiP.jl")
 ```
 
-This package uses [@odow](https://github.com/odow/ "")'s SDDP package, Mohua.jl:
+This package uses [@odow](https://github.com/odow/ "")'s SDDP package, SDDP.jl:
 ```julia
 Pkg.clone("https://github.com/odow/SDDP.jl")
 ```
@@ -28,7 +28,7 @@ Pkg.clone("https://github.com/odow/SDDP.jl")
 Note there are some examples in the *examples* folder.
 
 ### Calling the solver
-Using `Mohua.jl`, a user should include a call to `setSDDiPsolver!` at the end of a stage problem definition:
+Using `SDDP.jl`, a user should include a call to `setSDDiPsolver!` at the end of a stage problem definition:
 
 ```julia
 setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=mipsolver)
@@ -52,7 +52,7 @@ The fourth argument is special for SDDiP:
 
 For example:
 ```julia
-@binarystate(sp, 1 <= x[i=1:3] <= 10, z0 == ones(3)[i] , Int)
+@binarystate(sp, 1 <= x[i=1:3] <= 10, x0 == ones(3)[i] , Int)
 ```
 
 Although our state may be described by variables that are binary, integer, or continuous,
@@ -66,7 +66,7 @@ an optional fifth argument.
 
 For example:
 ```julia
-@binarystate(sp, 1 <= x[i=1:3] <= 10, z0 == ones(3)[i] , Cont, 0.01)
+@binarystate(sp, 1 <= x[i=1:3] <= 10, x0 == ones(3)[i] , Cont, 0.01)
 ```
 
 If a precision is not specified, the default precision is 0.1.

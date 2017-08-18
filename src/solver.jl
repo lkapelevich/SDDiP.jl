@@ -65,14 +65,12 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             setsolver(sp, solvers.LP)
             @assert JuMP.solve(sp, ignore_solve_hook=true, relaxation=true) == :Optimal
             π = -SDDP.getdual.(SDDP.states(sp))
+            # Update slacks because RHSs change each iteration
+            l.slacks = getslack.(l.constraints)
+            # Relax bounds to formulate Lagrangian
+            Lagrangian.relaxandcache!(l, sp)
             # Change the MIP objective
-            sp.internalModelLoaded = false
-            lagrangian(sp).slacks = getslack.(lagrangian(sp).constraints)
-            if SDDP.getsense(sp) == :Min
-                @objective(sp, :Min, l.obj + dot(π, l.slacks))
-            else
-                @objective(sp, :Max, l.obj - dot(π, l.slacks))
-            end
+            Lagrangian.setlagrangianobjective!(sp, l, π)
             # Solve the Lagrangian, with LP πs chosen and fixed
             setsolver(sp, solvers.MIP)
             status = solve(sp, ignore_solve_hook=true)
