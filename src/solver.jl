@@ -3,9 +3,9 @@
 # Overload how stage problems are solved in the backward pass
 function SDDP.JuMPsolve(::Type{SDDP.BackwardPass}, m::SDDPModel, sp::JuMP.Model)
     if sp.solvehook == nothing
-        @assert JuMP.solve(sp) == :Optimal
+        JuMP.solve(sp)
     else
-        @assert JuMP.solve(sp, require_duals=true, iteration=length(m.log)) == :Optimal
+        JuMP.solve(sp, require_duals=true, iteration=length(m.log))
     end
 end
 

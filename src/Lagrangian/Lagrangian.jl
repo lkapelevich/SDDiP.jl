@@ -115,7 +115,6 @@ function lagrangiansolve!(l::LinearProgramData, m::JuMP.Model, π::Vector{Float6
 
     # Solve
     status, obj = lagrangian_method!(l, m, π)
-    @assert status == :Optimal
 
     # Set objective
     m.objVal = obj

@@ -135,6 +135,6 @@ function lagrangian_method!{T}(lp::LinearProgramData{SubgradientMethod{T}}, m::J
             end
         end
     end
-    return :IterationLimit, bound
     warn("Lagrangian relaxation did not solve properly.")
+    return :IterationLimit, bound
 end
