@@ -38,7 +38,7 @@ Solve the Lagrangian dual of a linear program using subgradient descent.
 
 # Arguments
 * lp        Information about the primal problem
-* m         The primal prbolem
+* m         The primal problem
 * π         Initial iterate
 
 # Returns
@@ -105,7 +105,7 @@ function lagrangian_method!{T}(lp::LinearProgramData{SubgradientMethod{T}}, m::J
             candidate = getvalue(lp.obj)
             # Check πᵀ(Ax-b) = candidate - bound
             if isclose(candidate, bound, tol) || timesunchanged > 30 # need to think about how to terminate with duality gap
-                # Complimentary slackness => we are done
+                # Complementary slackness => we are done
                 if reversed
                     # Undo transformation
                     π .*= -1
