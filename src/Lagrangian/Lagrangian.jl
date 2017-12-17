@@ -9,7 +9,7 @@ lagrangiansolve!,
 # Structs to implement methods
 LevelMethod,
 SubgradientMethod,
-KellyMethod,
+KelleyMethod,
 # Structs to solve the primal
 LinearProgram,
 # Each method needs to know about the problem being solved
@@ -37,7 +37,7 @@ end
 include("utils.jl")
 include("levelmethod.jl")
 include("subgradient.jl")
-include("kelly.jl")
+include("kelley.jl")
 
 """
     LinearProgramData(obj::QuadExpr, constraints::Vector{<:ConstraintRef}, relaxed_bounds::Vector{Float64}; method=LevelMethod(), problem_class=LinearProgram())

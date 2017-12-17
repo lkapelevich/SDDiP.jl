@@ -29,7 +29,7 @@ m=SDDPModel(stages=data.T, objective_bound=100.0, sense=:Max, solver=GLPKSolverM
     # setSDDiPsolver!(sp, method=LevelMethod(-100.0, quadsolver=IpoptSolver(print_level=0)))
     # Subgradient descent example:
     setSDDiPsolver!(sp, method=SubgradientMethod(-100.0))
-    # setSDDiPsolver!(sp, method=KellyMethod(-100.0))
+    # setSDDiPsolver!(sp, method=KelleyMethod(-100.0))
 
 end
 

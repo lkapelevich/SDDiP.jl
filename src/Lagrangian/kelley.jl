@@ -1,29 +1,29 @@
 #
-# Kelly's method with lazy hyperplanes.
+# Kelley's method with lazy hyperplanes.
 #
 """
-    KellyMethod
+    KelleyMethod
 
-The parameters for solving a Lagrangian dual with Kelly's method.
+The parameters for solving a Lagrangian dual with Kelley's method.
 
 # Arguments
 * initialbound   Initial upper or lower bound for the Lagrangian dual
 * tol            Tolerance: we stop when the gap between our approximation of the function and the actual function value is less than `tol`
 * maxit          To terminate the method
 """
-immutable KellyMethod{T<:Tolerance} <: AbstractLagrangianMethod
+immutable KelleyMethod{T<:Tolerance} <: AbstractLagrangianMethod
     initialbound::Float64   # starting bound for the Lagrangian dual problem
     tol::T                  # tolerance for terminating
     maxit::Int              # a cap on iterations
 end
-function KellyMethod(initialbound::Float64; tol=Unit(1e-6), maxit=10_000)
-    KellyMethod(initialbound, tol, maxit)
+function KelleyMethod(initialbound::Float64; tol=Unit(1e-6), maxit=10_000)
+    KelleyMethod(initialbound, tol, maxit)
 end
 
 """
-    lagrangian_method!(lp::LinearProgramData{KellyMethod}, m::JuMP.Model, π::Vector{Float64})
+    lagrangian_method!(lp::LinearProgramData{KelleyMethod}, m::JuMP.Model, π::Vector{Float64})
 
-Kelly's method with a lazy callback approach.
+Kelley's method with a lazy callback approach.
 
 # Arguments
 * lp        Information about the primal problem
@@ -33,11 +33,11 @@ Kelly's method with a lazy callback approach.
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!{T}(lp::LinearProgramData{KellyMethod{T}}, m::JuMP.Model, π::Vector{Float64})
+function lagrangian_method!{T}(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.Model, π::Vector{Float64})
 
-    kellys = lp.method
+    kelleys = lp.method
     N      = length(π)
-    tol    = kellys.tol
+    tol    = kelleys.tol
 
     # Gap between approximate model and true function each iteration
     gap = Inf
@@ -66,16 +66,16 @@ function lagrangian_method!{T}(lp::LinearProgramData{KellyMethod{T}}, m::JuMP.Mo
     end
     # Let's not be unbounded from the beginning
     if dualsense == :Min
-        setlowerbound(θ, kellys.initialbound)
+        setlowerbound(θ, kelleys.initialbound)
         best_actual = Inf
     else
-        setupperbound(θ, kellys.initialbound)
+        setupperbound(θ, kelleys.initialbound)
         best_actual = -Inf
     end
 
     iteration = 0
 
-    while iteration < kellys.maxit
+    while iteration < kelleys.maxit
         iteration += 1
         # Evaluate the real function and a subgradient
         f_actual, fdash = solve_primal(m, lp, π)
