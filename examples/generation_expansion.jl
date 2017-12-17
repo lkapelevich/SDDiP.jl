@@ -46,7 +46,7 @@ build(s::Symbol)  = getgen(s).b_cost
 use(s::Symbol)    = getgen(s).g_cost
 init(s::Symbol)   = getgen(s).init
 
-m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GurobiSolver(OutputFlag=0)) do sp, stage
+m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP()) do sp, stage
     @binarystate(sp, invested[i = gentypes, j = 1:nunits(i)], invested0 == init(i)[j], Bin)
     @variables(sp, begin
         generation[gentypes] >= 0
