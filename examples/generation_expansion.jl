@@ -46,7 +46,7 @@ build(s::Symbol)  = getgen(s).b_cost
 use(s::Symbol)    = getgen(s).g_cost
 init(s::Symbol)   = getgen(s).init
 
-m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP()) do sp, stage
+m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GurobiSolver(OutputFlag=0)) do sp, stage
     @binarystate(sp, invested[i = gentypes, j = 1:nunits(i)], invested0 == init(i)[j], Bin)
     @variables(sp, begin
         generation[gentypes] >= 0
@@ -66,12 +66,12 @@ m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP
     end)
 
     # Demand is uncertain
-    @noise(sp, D=data.demand[stage,:], demand == D)
+    @rhsnoise(sp, D=data.demand[stage,:], demand == D)
 
     # Handy calculation of the investment cost in this stage
     @expression(sp, investment_cost[i = gentypes], build(i) * sum(invested[i, j] - invested0[i, j] for j = 1:nunits(i)))
 
-    stageobjective!(sp,
+    @stageobjective(sp,
         sum(investment_cost[i] for i = gentypes) * data.rho ^ (stage - 1) +
         sum(use(i) * generation[i] for i = gentypes) * data.hours * data.rho ^ (stage - 1) +
         penalty * data.penalty * data.hours)

@@ -23,12 +23,13 @@ m=SDDPModel(stages=data.T, objective_bound=100.0, sense=:Max, solver=GLPKSolverM
         dynamics[i=1:data.N], x[i] == x0[i] - data.offer[i, stage] * accept_offer
     end)
 
-    stageobjective!(sp, sum(data.R[i, stage] * data.offer[i, stage] * accept_offer for i=1:data.N))
+    @stageobjective(sp, sum(data.R[i, stage] * data.offer[i, stage] * accept_offer for i=1:data.N))
 
     # Level method example:
     # setSDDiPsolver!(sp, method=LevelMethod(-100.0, quadsolver=IpoptSolver(print_level=0)))
     # Subgradient descent example:
     setSDDiPsolver!(sp, method=SubgradientMethod(-100.0))
+    # setSDDiPsolver!(sp, method=KellyMethod(-100.0))
 
 end
 

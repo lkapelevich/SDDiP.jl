@@ -73,7 +73,6 @@ function lagrangian_method!{T}(lp::LinearProgramData{KellyMethod{T}}, m::JuMP.Mo
         best_actual = -Inf
     end
 
-
     iteration = 0
 
     while iteration < kellys.maxit

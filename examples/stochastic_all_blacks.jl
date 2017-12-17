@@ -34,10 +34,10 @@ m=SDDPModel(stages=data.T, objective_bound=100.0, sense=:Max, solver=GLPKSolverM
 
     for i in 1:data.N
       # Can't sell a seat if there is no offer for it
-      @noise(sp, ω = data.offer[i, stage], accept_offer[i] <= ω)
+      @rhsnoise(sp, ω = data.offer[i, stage], accept_offer[i] <= ω)
     end
 
-    stageobjective!(sp, sum(data.R[i, stage] * accept_offer[i] for i=1:data.N))
+    @stageobjective(sp, sum(data.R[i, stage] * accept_offer[i] for i=1:data.N))
 
     # Call for using a Lagrangian solver
     setSDDiPsolver!(sp, method=LevelMethod(-100.0, quadsolver=IpoptSolver(print_level=0)))
