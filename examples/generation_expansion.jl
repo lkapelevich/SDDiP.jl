@@ -66,12 +66,12 @@ m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP
     end)
 
     # Demand is uncertain
-    @noise(sp, D=data.demand[stage,:], demand == D)
+    @rhsnoise(sp, D=data.demand[stage,:], demand == D)
 
     # Handy calculation of the investment cost in this stage
     @expression(sp, investment_cost[i = gentypes], build(i) * sum(invested[i, j] - invested0[i, j] for j = 1:nunits(i)))
 
-    stageobjective!(sp,
+    @stageobjective(sp,
         sum(investment_cost[i] for i = gentypes) * data.rho ^ (stage - 1) +
         sum(use(i) * generation[i] for i = gentypes) * data.hours * data.rho ^ (stage - 1) +
         penalty * data.penalty * data.hours)
@@ -86,4 +86,4 @@ end
 
 srand(11111)
 status = solve(m, max_iterations=60)
-@assert isapprox(getbound(m), 460533, atol=1e3)
+@assert isapprox(getbound(m), 460_533.0, atol=1e3)

@@ -56,14 +56,14 @@ m = SDDPModel(
 
     # ====================
     #   Scenarios
-    @noises(sp, D=Demand[stage,:], begin
+    @rhsnoises(sp, D=Demand[stage,:], begin
         sell <= D
         sell >= 0.5D
     end)
 
     # ====================
     #   Objective
-    stageobjective!(sp, sell * RetailPrice - buy * PurchasePrice[markov_state])
+    @stageobjective(sp, sell * RetailPrice - buy * PurchasePrice[markov_state])
 
     # ====================
     #   Dynamics constraint

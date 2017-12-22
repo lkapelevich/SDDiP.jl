@@ -11,8 +11,8 @@ uberror(x) =  error("You must provide an upper bound on $(x).
     The lower the bound, the smaller the statespace.")
 
 @compat function anonymousstate!(sp::JuMP.Model, nstates::Int, initial::Vector{<:Real})
-    stateout = @variable(sp, [i=1:nstates], start=initial[i])
-    statein  = @variable(sp, [1:nstates])
+    stateout = @variable(sp, [1:nstates])
+    statein  = @variable(sp, [i=1:nstates], start=initial[i])
     SDDP.statevariable!(sp, statein, stateout)
     stateout, statein
 end
@@ -23,7 +23,7 @@ function binarystate!(sp::JuMP.Model, xout::JuMP.Variable, xin::JuMP.Variable)
     isinf(ub) && uberror(xout)
 
     nstates = bitsrequired(Int(ub))
-    init = binexpand(Int(getvalue(xout)), length=nstates)
+    init = binexpand(Int(getvalue(xin)), length=nstates)
 
     v, v0 = anonymousstate!(sp, nstates, init)
     @constraint(sp, xout == bincontract(v))
@@ -37,7 +37,7 @@ function binarystate!(sp::JuMP.Model, xout::JuMP.Variable, xin::JuMP.Variable, e
     isinf(ub) && uberror(xout)
 
     nstates = bitsrequired(ub, eps)
-    init = binexpand(float(getvalue(xout)), eps, length=nstates)
+    init = binexpand(float(getvalue(xin)), eps, length=nstates)
 
     v, v0 = anonymousstate!(sp, nstates, init)
     @constraint(sp, xout == bincontract(Float64, v, eps))
@@ -145,8 +145,8 @@ macro binarystate(sp, x, x0, vtype_args...)
         varin, varout = gensym(), gensym()
 
         code = quote
-            $varout = $(Expr(:macrocall, Symbol("@variable"), sp, esc(x), Expr(SDDP.KW_SYM, SDDP.START, esc(init))))
-            $varin  = $(Expr(:macrocall, Symbol("@variable"), sp, esc(xin)))
+            $varout = $(Expr(:macrocall, Symbol("@variable"), sp, esc(x)))
+            $varin  = $(Expr(:macrocall, Symbol("@variable"), sp, esc(xin), Expr(SDDP.KW_SYM, SDDP.START, esc(init))))
         end
 
         if vtype == :Int

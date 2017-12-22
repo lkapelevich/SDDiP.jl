@@ -31,7 +31,7 @@ Note there are some examples in the *examples* folder.
 Using `SDDP.jl`, a user should include a call to `setSDDiPsolver!` at the end of a stage problem definition:
 
 ```julia
-setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=mipsolver)
+setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.0), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=MIPsolver)
 ```
 The keyword arguments are as follows.
 * `method`: An `AbstractLagrangianMethod` object from that defines how the Lagrangian will be solved. See the readme in *src/Lagrangian*.

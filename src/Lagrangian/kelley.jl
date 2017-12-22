@@ -1,39 +1,29 @@
 #
-# Level Method types and methods.
+# Kelley's method with lazy hyperplanes.
 #
 """
-    LevelMethod
+    KelleyMethod
 
-The parameters for solving a Lagrangian dual using the Level Method.
+The parameters for solving a Lagrangian dual with Kelley's method.
 
-initialbound   Initial upper or lower bound for the Lagrangian dual
-level          Level method parameter 0 ≥ λ ≥ 1
-tol            Tolerance: we stop when the gap between our approximation of the function and the actual function value is less than `tol`
-solver         A quadratic solver
-maxit          To terminate the method
+# Arguments
+* initialbound   Initial upper or lower bound for the Lagrangian dual
+* tol            Tolerance: we stop when the gap between our approximation of the function and the actual function value is less than `tol`
+* maxit          To terminate the method
 """
-immutable LevelMethod{S<:JuMP.MathProgBase.AbstractMathProgSolver,T<:Tolerance} <: AbstractLagrangianMethod
+immutable KelleyMethod{T<:Tolerance} <: AbstractLagrangianMethod
     initialbound::Float64   # starting bound for the Lagrangian dual problem
-    level::Float64          # parameter between 0 and 1
     tol::T                  # tolerance for terminating
-    solver::S               # should be a quadratic solver
     maxit::Int              # a cap on iterations
 end
-function LevelMethod(initialbound::Float64; level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=10_000)
-    if quadsolver == UnsetSolver()
-        error("You must specify a MathProgBase solver that can handle quadratic objective functions.")
-    end
-    if 0.0 <= level <= 1.0
-        return LevelMethod(initialbound, level, tol, quadsolver, maxit)
-    else
-        error("Level parameter must be between 0 and 1.")
-    end
+function KelleyMethod(initialbound::Float64; tol=Unit(1e-6), maxit=10_000)
+    KelleyMethod(initialbound, tol, maxit)
 end
 
 """
-    lagrangian_method!(lp::LinearProgramData{LevelMethod}, m::JuMP.Model, π::Vector{Float64})
+    lagrangian_method!(lp::LinearProgramData{KelleyMethod}, m::JuMP.Model, π::Vector{Float64})
 
-The Level Method (Lemarechal, Nemirovskii, Nesterov, 1992).
+Kelley's method with a lazy callback approach.
 
 # Arguments
 * lp        Information about the primal problem
@@ -43,20 +33,24 @@ The Level Method (Lemarechal, Nemirovskii, Nesterov, 1992).
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuMP.Model, π::Vector{Float64})
+function lagrangian_method!{T}(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.Model, π::Vector{Float64})
 
-    levelmethod = lp.method
-    N           = length(π)
-    tol         = levelmethod.tol
+    kelleys = lp.method
+    N      = length(π)
+    tol    = kelleys.tol
+
     # Gap between approximate model and true function each iteration
-    gap       = Inf
+    gap = Inf
+    # Let's make new storage for the best multiplier found so far
+    bestmult = copy(π)
     # Dual problem has the opposite sense to the primal
     dualsense = getdualsense(m)
-    # Let's make new storage for the best multiplier found so far
-    bestmult  = copy(π)
+    # Some default values with type info
+    f_approx, f_actual = 0.0, 0.0
+    fdash = zeros(N)
 
     # The approximate model will be a made from linear hyperplanes
-    approx_model = Model(solver=levelmethod.solver)
+    approx_model = Model(solver=m.solver)
 
     @variables approx_model begin
         θ                   # The objective of the approximate model
@@ -72,32 +66,29 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
     end
     # Let's not be unbounded from the beginning
     if dualsense == :Min
-        setlowerbound(θ, levelmethod.initialbound)
+        setlowerbound(θ, kelleys.initialbound)
         best_actual = Inf
     else
-        setupperbound(θ, levelmethod.initialbound)
+        setupperbound(θ, kelleys.initialbound)
         best_actual = -Inf
     end
 
     iteration = 0
 
-    while iteration < levelmethod.maxit
+    while iteration < kelleys.maxit
         iteration += 1
         # Evaluate the real function and a subgradient
-        # m.internalModelLoaded = false # need to do this smarter...
         f_actual, fdash = solve_primal(m, lp, π)
 
-        # Improve the model, undo level bounds on θ, and update best function value so far
+        # Improve the model and update best function value so far
         if dualsense == :Min
             @constraint(approx_model, θ >= f_actual + dot(fdash, x - π))
-            setupperbound(θ, Inf)
             if f_actual < best_actual
                 best_actual = f_actual
                 bestmult .= π
             end
         else
             @constraint(approx_model, θ <= f_actual + dot(fdash, x - π))
-            setlowerbound(θ, -Inf)
             if f_actual > best_actual
                 best_actual = f_actual
                 bestmult .= π
@@ -123,22 +114,8 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
             end
             return :Optimal, best_actual::Float64
         end
-        # Form a level
-        if dualsense == :Min
-            level = f_approx + (gap * lp.method.level + tol.val/10.0)
-            setupperbound(θ, level)
-        else
-            level = f_approx - (gap * lp.method.level + tol.val/10.0)
-            setlowerbound(θ, level)
-        end
 
         # Get the next iterate
-        # TODO: why does it have to be quadratic?
-        #   - solve using a lazy hyperplane approach
-        #   - use L1 norm instead
-        @objective(approx_model, Min, sum((π[i]-x[i])^2 for i=1:N))
-        @assert solve(approx_model) == :Optimal
-        # Update π for this iteration
         π .= getvalue(x)
     end
     warn("Lagrangian relaxation did not solve properly.")

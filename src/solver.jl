@@ -95,7 +95,7 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
 end
 
 """
-    setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.0), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=mipsolver)
+    setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.0), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=MIPsolver)
 
 Sets a JuMP solvehook for integer SDDP to stage problem `sp` that will call a
 a Lagrangian solver of type `method.` Argument `pattern` can be used to specify
