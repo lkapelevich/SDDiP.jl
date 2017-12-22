@@ -89,14 +89,14 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
 
         # Improve the model, undo level bounds on θ, and update best function value so far
         if dualsense == :Min
-            @constraint(approx_model, θ >= f_actual - dot(fdash, π) + dot(fdash, x))
+            @constraint(approx_model, θ >= f_actual + dot(fdash, x - π))
             setupperbound(θ, Inf)
             if f_actual < best_actual
                 best_actual = f_actual
                 bestmult .= π
             end
         else
-            @constraint(approx_model, θ <= f_actual - dot(fdash, π) + dot(fdash, x))
+            @constraint(approx_model, θ <= f_actual + dot(fdash, x - π))
             setlowerbound(θ, -Inf)
             if f_actual > best_actual
                 best_actual = f_actual

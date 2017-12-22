@@ -86,4 +86,4 @@ end
 
 srand(11111)
 status = solve(m, max_iterations=60)
-@assert isapprox(getbound(m), 460533, atol=1e3)
+@assert isapprox(getbound(m), 460_533.0, atol=1e3)

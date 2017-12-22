@@ -82,13 +82,13 @@ function lagrangian_method!{T}(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.M
 
         # Improve the model and update best function value so far
         if dualsense == :Min
-            @constraint(approx_model, θ >= f_actual - dot(fdash, π) + dot(fdash, x))
+            @constraint(approx_model, θ >= f_actual + dot(fdash, x - π))
             if f_actual < best_actual
                 best_actual = f_actual
                 bestmult .= π
             end
         else
-            @constraint(approx_model, θ <= f_actual - dot(fdash, π) + dot(fdash, x))
+            @constraint(approx_model, θ <= f_actual + dot(fdash, x - π))
             if f_actual > best_actual
                 best_actual = f_actual
                 bestmult .= π
