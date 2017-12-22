@@ -45,8 +45,6 @@ function lagrangian_method!{T}(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.M
     bestmult = copy(π)
     # Dual problem has the opposite sense to the primal
     dualsense = getdualsense(m)
-    # Some default values with type info
-    f_approx, f_actual = 0.0, 0.0
     fdash = zeros(N)
 
     # The approximate model will be a made from linear hyperplanes
@@ -67,10 +65,10 @@ function lagrangian_method!{T}(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.M
     # Let's not be unbounded from the beginning
     if dualsense == :Min
         setlowerbound(θ, kelleys.initialbound)
-        best_actual = Inf
+        best_actual, f_actual, f_approx = Inf, Inf, -Inf
     else
         setupperbound(θ, kelleys.initialbound)
-        best_actual = -Inf
+        best_actual, f_actual, f_approx = -Inf, -Inf, Inf
     end
 
     iteration = 0

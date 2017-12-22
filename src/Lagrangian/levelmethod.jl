@@ -73,10 +73,10 @@ function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuM
     # Let's not be unbounded from the beginning
     if dualsense == :Min
         setlowerbound(θ, levelmethod.initialbound)
-        best_actual = Inf
+        best_actual, f_approx = Inf, -Inf
     else
         setupperbound(θ, levelmethod.initialbound)
-        best_actual = -Inf
+        best_actual, f_approx = -Inf, Inf
     end
 
     iteration = 0
