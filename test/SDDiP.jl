@@ -91,7 +91,8 @@ for example in [
         "SDDiPnewsvendor.jl",
         "all_blacks.jl",
         "generation_expansion.jl",
-        "stochastic_all_blacks.jl"
+        "stochastic_all_blacks.jl",
+        "booking_management.jl"
     ]
     @testset "$example" begin
         include(joinpath(examples_dir, example))
