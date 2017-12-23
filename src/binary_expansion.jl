@@ -9,8 +9,8 @@ const _2i_ = Int[2^(i-1) for i in 1:floor(Int, log(typemax(Int)) * log2inv)+1]
 const _2i_L = length(_2i_)
 
 function binexpand!(y::Vector{Int}, x::Int)
-    if x <= 0
-        error("Values to be expanded must be strictly greater than 0. Currently x = $x")
+    if x < 0
+        error("Values to be expanded must be nonnegative. Currently x = $x.")
     end
     @inbounds for i in length(y):-1:1
         k = _2i_[i]
@@ -20,7 +20,7 @@ function binexpand!(y::Vector{Int}, x::Int)
         end
     end
     if x > 0
-        error("Unable to expand binary. Overflow of $x")
+        error("Unable to expand binary. Overflow of $x.")
     end
 end
 
