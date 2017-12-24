@@ -22,7 +22,7 @@
 
     Optimal bound $62,500
 =#
-using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP, Cbc, Gurobi
+using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP, GLPKMathProgInterface
 
 function airconditioningmodel()
     m = SDDPModel(
@@ -31,7 +31,7 @@ function airconditioningmodel()
         objective_bound = (t, i) -> 0.0,
                   sense = :Min,
                  # solver = GLPKSolverMIP()
-                 solver = GurobiSolver(OutputFlag=0)
+                 solver = GLPKSolverMIP()
                             ) do sp, stage
         # number of units
         @binarystate(sp, 0 <= stored_production <= 900, incoming_storage == 0, Int)
@@ -52,11 +52,11 @@ function airconditioningmodel()
         end
         @stageobjective(sp, 100 * production + 300 * overtime + 50 * stored_production)
         # Set integer solver
-        setSDDiPsolver!(sp, method=KelleyMethod(1e5), pattern=Pattern(lagrangian=5, benders=1))
+        setSDDiPsolver!(sp, method=KelleyMethod(1e5), LPsolver=GLPKSolverLP(), pattern=Pattern(lagrangian=5, benders=1))
     end
 end
 
 srand(1234)
 m = airconditioningmodel()
-solve(m, max_iterations=10)
+solve(m, max_iterations=60)
 @test isapprox(getbound(m), 62_500.0)
