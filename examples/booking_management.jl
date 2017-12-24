@@ -13,12 +13,6 @@
 
     Each stage, we receive a booking request and can choose to accept or decline
     it. Once accepted, bookings cannot be terminated.
-
-    Properly formulated, this problem requires binary state variables. However,
-    SDDP.jl cannot solve such problems. Therefore we solve the LP relaxation.
-
-    Checkout github.com/lkapelevich/SDDiP.jl for a multi-stage stochastic
-    programming solver with binary state variables.
 =#
 using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP
 
@@ -87,10 +81,10 @@ end
 
 srand(1234)
 m_1_2_5 = bookingmanagementmodel(1, 2, 5)
-@test solve(m_1_2_5, max_iterations = 10, print_level = 2) == :max_iterations
+@test solve(m_1_2_5, max_iterations = 10) == :max_iterations
 @test isapprox(getbound(m_1_2_5), 7.25, atol=0.001)
 
 srand(1234)
 m_2_2_3 = bookingmanagementmodel(2, 2, 3)
-@test solve(m_2_2_3, max_iterations = 90, print_level = 2) == :max_iterations
+@test solve(m_2_2_3, max_iterations = 90) == :max_iterations
 @test isapprox(getbound(m_2_2_3), 6.13, atol=0.001)
