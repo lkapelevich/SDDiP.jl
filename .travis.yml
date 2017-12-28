@@ -8,6 +8,10 @@ notifications:
   email: false
 git:
   depth: 99999999
+sudo: false
+addons:
+    apt_packages:
+    - gfortran
 script:
   - julia -e 'Pkg.clone("https://github.com/odow/SDDP.jl.git")'
   - julia -e 'Pkg.clone(pwd()); Pkg.build("SDDiP"); Pkg.test("SDDiP"; coverage=true)'
