@@ -32,7 +32,7 @@ function vehiclelocationmodel(nvehicles, baselocations, requestlocations)
     Vehicles = 1:nvehicles          # ambulances
     nbases = length(baselocations)
     Bases = 1:nbases                # base 1 = hostpital
-    Requests = collect(0:2:100)     # Points on the number line where calls come from
+    Requests = collect(requestlocations)     # Points on the number line where calls come from
 
     shiftcost(src, dest) = abs(Locations[src] - Locations[dest])
     dispatchcost(request, base) = 2 * (abs(request - Locations[1]) + abs(request-Locations[base]))
@@ -45,7 +45,7 @@ function vehiclelocationmodel(nvehicles, baselocations, requestlocations)
                  stages = 10,
         objective_bound = 0.0,
                   sense = :Min,
-                 solver = GurobiSolver(OutputFlag=0)
+                 solver = GLPKSolverMIP()
                             ) do sp, t
 
         # Vehicles at which bases?
@@ -81,41 +81,49 @@ function vehiclelocationmodel(nvehicles, baselocations, requestlocations)
             [v in Vehicles], q[1, v] == basebalance[1,v] + sum(dispatch[:,v])
         end)
 
-        # Symmetry breaking constraints
-        # TODO - improve these
-        @variables(sp, begin
-            # Let s[u, v, b] = 1 if vehicles u and v are both at base b
-            s[u=1:nvehicles-1, v=u+1:nvehicles, Bases], Bin
-        end)
-        @constraints(sp, begin
-            # Definition of s
-            [u=1:nvehicles-1, v=u+1:nvehicles, b in Bases], s[u, v, b] <= q0[b, u]
-            [u=1:nvehicles-1, v=u+1:nvehicles, b in Bases], s[u, v, b] <= q0[b, v]
-            [u=1:nvehicles-1, v=u+1:nvehicles, b in Bases], q0[b, u] + q0[b, v] <= s[u, v, b] + 1
-            # If multiple vehicles are at the same base, dispatch vehicle v before v+i
-            [b in Bases, u=1:nvehicles-1, v=u+1:nvehicles], dispatch[b, u] - dispatch[b, v] >= s[u,v, b] - 1
-            # From any base, shift vehicle v before v+i
-            [b in Bases, u=1:nvehicles-1, v=u+1:nvehicles, c in Bases], shift[b, u, c] - shift[b, v, c] >= s[u,v, b] - 1
-            # From any base, shift u to b and v to c if b has a lower index than c
-            [b in Bases, u=1:nvehicles-1, v=u+1:nvehicles, c=1:nbases, d=c:nbases], shift[b, u, c] - shift[b, v, d] >= s[u,v, b] - 1
-        end)
-
-        @stageobjective(sp, request=Requests, sum(
-                #distance to travel from base to emergency and back to home base
-                dispatch[b,v] * dispatchcost(request, b) +
-                #distance travelled by vehilces relocating bases
-                sum(shiftcost(b, dest) * shift[b, v, dest] for dest in Bases)
-            for b in Bases, v in Vehicles)
+        if t == 1
+            @stageobjective(sp, sum(
+                    #distance to travel from base to emergency and back to home base
+                    dispatch[b,v] * dispatchcost(50, b) +
+                    #distance travelled by vehilces relocating bases
+                    sum(shiftcost(b, dest) * shift[b, v, dest] for dest in Bases)
+                for b in Bases, v in Vehicles)
+            )
+        else
+            @stageobjective(sp, request=Requests, sum(
+                    #distance to travel from base to emergency and back to home base
+                    dispatch[b,v] * dispatchcost(request, b) +
+                    #distance travelled by vehilces relocating bases
+                    sum(shiftcost(b, dest) * shift[b, v, dest] for dest in Bases)
+                for b in Bases, v in Vehicles)
         )
+        end
         setSDDiPsolver!(sp,
-            method=KelleyMethod(600.0),
-            # LPsolver = GLPKSolverLP(),
-            pattern=Pattern(benders=0, lagrangian=1, strengthened_benders=1)
+            method=SubgradientMethod(2000.0),
+            LPsolver = GLPKSolverLP(),
+            pattern=Pattern(benders=4, lagrangian=1)
             )
     end
 end
 
-# Solve LP relaxation for a few iterations
+srand(1234)
 ambulancemodel = vehiclelocationmodel(3, [0, 20, 40, 60, 80, 100], 0:10:100)
-@assert solve(ambulancemodel, max_iterations=15) == :max_iterations
-@test isapprox(getbound(ambulancemodel), 1540.0, atol=5)
+@assert solve(ambulancemodel, max_iterations=20) == :max_iterations
+@test isapprox(getbound(ambulancemodel), 1196.0, atol=5)
+
+# Symmetry breaking constraints
+# @variables(sp, begin
+#     # Let s[u, v, b] = 1 if vehicles u and v are both at base b
+#     s[u=1:nvehicles-1, v=u+1:nvehicles, Bases], Bin
+# end)
+# @constraints(sp, begin
+#     # Definition of s
+#     [u=1:nvehicles-1, v=u+1:nvehicles, b in Bases], s[u, v, b] <= q0[b, u]
+#     [u=1:nvehicles-1, v=u+1:nvehicles, b in Bases], s[u, v, b] <= q0[b, v]
+#     [u=1:nvehicles-1, v=u+1:nvehicles, b in Bases], q0[b, u] + q0[b, v] <= s[u, v, b] + 1
+#     # If multiple vehicles are at the same base, dispatch vehicle v before v+i
+#     [b in Bases, u=1:nvehicles-1, v=u+1:nvehicles], dispatch[b, u] - dispatch[b, v] >= s[u,v, b] - 1
+#     # From any base, shift u to b and v to c if b has a lower index than c, unless u is being dispatched
+#     [b in Bases, u=1:nvehicles-1, v=u+1:nvehicles, c=1:nbases, d=c:nbases],
+#         shift[b, u, c] + dispatch[b, u] - shift[b, v, d] >= s[u, v, b] - 1
+# end)
