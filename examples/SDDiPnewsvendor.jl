@@ -71,12 +71,13 @@ m = SDDPModel(
 
     # Call to solve via Lagrangians
     # setSDDiPsolver!(sp, method=LevelMethod(-200.0, quadsolver=IpoptSolver(print_level=0)))
-    setSDDiPsolver!(sp, method=SubgradientMethod(-200.0, wait=10))
+    # setSDDiPsolver!(sp, method=SubgradientMethod(-200.0, wait=10))
+    setSDDiPsolver!(sp, method=KelleyMethod(-200.0))
 
 end
 
 @time solvestatus = SDDP.solve(m,
-    max_iterations = 120
+    max_iterations = 70
 )
 
 @test isapprox(getbound(m), 97.9, atol=1e-3)
