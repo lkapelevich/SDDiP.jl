@@ -22,7 +22,7 @@
 
     Optimal bound $62,500
 =#
-using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP, GLPKMathProgInterface
+using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP
 
 function airconditioningmodel()
     m = SDDPModel(

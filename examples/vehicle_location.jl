@@ -25,7 +25,7 @@ distance. If an ambulance is not dispatched in a stage, the ambulance can be
 relocated to a different base in preparation for future calls. This incurrs a
 cost of the driving distance.
 =#
-using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP, Ipopt, Gurobi
+using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP
 
 function vehiclelocationmodel(nvehicles, baselocations, requestlocations)
     Locations = baselocations       # Points on the number line where emergency bases are located
