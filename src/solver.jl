@@ -54,13 +54,15 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
     @assert !(require_duals && iteration == -1)
     solvers = sp.ext[:solvers]
     if require_duals && SDDP.ext(sp).stage > 1
+        # Update the objective we cache in case the objective has noises
+        l = lagrangian(sp)
+        l.obj = getobjective(sp)
         cuttype = getcuttype(iteration, sp.ext[:pattern])
         if cuttype == :benders
             # Solve linear relaxation
             setsolver(sp, solvers.LP)
             status = JuMP.solve(sp, ignore_solve_hook=true, relaxation=true)
         elseif cuttype == :strengthened_benders
-            l = lagrangian(sp)
             # Get the LP duals
             setsolver(sp, solvers.LP)
             @assert JuMP.solve(sp, ignore_solve_hook=true, relaxation=true) == :Optimal
@@ -79,13 +81,14 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             Lagrangian.recover!(l, sp, π)
         else
             # Slacks have a new RHS each iteration, so update them
-            lagrangian(sp).slacks = getslack.(lagrangian(sp).constraints)
+            l.slacks = getslack.(l.constraints)
             # Somehow choose duals to start with
-            π0 = zeros(length(lagrangian(sp).constraints)) # or rand, or ones
+            π0 = zeros(length(l.constraints)) # or rand, or ones
             # Lagrangian objective and duals
             setsolver(sp, solvers.MIP)
-            status, _ = lagrangiansolve!(lagrangian(sp), sp, π0)
+            status, _ = lagrangiansolve!(l, sp, π0)
         end
+        sp.obj = l.obj
     else
         # We are in the forward pass, or we are in stage 1
         setsolver(sp, solvers.MIP)
@@ -122,10 +125,10 @@ function setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.0), pattern=Patter
     end
 
     relaxed_bounds = ones(length(constraints))
-    sp.ext[:Lagrangian] = LinearProgramData(getobjective(sp),       # objective
-                                           constraints,             # relaxed constraints
-                                           relaxed_bounds,          # RHS of relaxed constraints
-                                           method=method)           # method to solve
+    sp.ext[:Lagrangian] = LinearProgramData(QuadExpr(),         # objective
+                                           constraints,         # relaxed constraints
+                                           relaxed_bounds,      # RHS of relaxed constraints
+                                           method=method)       # method to solve
     # Store pattern and solvers
     sp.ext[:pattern] = pattern
     sp.ext[:solvers] = MixedSolvers(LPsolver, MIPsolver)
