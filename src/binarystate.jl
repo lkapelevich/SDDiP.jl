@@ -10,9 +10,10 @@
 uberror(x) =  error("You must provide an upper bound on $(x).
     The lower the bound, the smaller the statespace.")
 
-@compat function anonymousstate!(sp::JuMP.Model, nstates::Int, initial::Vector{<:Real})
-    stateout = @variable(sp, [1:nstates])
-    statein  = @variable(sp, [i=1:nstates], start=initial[i])
+@compat function anonymousstate!(sp::JuMP.Model, nstates::Int, initial::Vector{<:Real},
+                             nameout::AbstractString, namein::AbstractString)
+    statein  = @variable(sp, [i=1:nstates], basename="_bin_$namein", start=initial[i])
+    stateout = @variable(sp,   [1:nstates], basename="_bin_$nameout")
     SDDP.statevariable!(sp, statein, stateout)
     stateout, statein
 end
@@ -25,10 +26,9 @@ function binarystate!(sp::JuMP.Model, xout::JuMP.Variable, xin::JuMP.Variable)
     nstates = bitsrequired(Int(ub))
     init = binexpand(Int(getvalue(xin)), length=nstates)
 
-    v, v0 = anonymousstate!(sp, nstates, init)
+    v, v0 = anonymousstate!(sp, nstates, init, JuMP.getname(xout), JuMP.getname(xin))
     @constraint(sp, xout == bincontract(v))
     @constraint(sp, xin  == bincontract(v0))
-
 end
 
 function binarystate!(sp::JuMP.Model, xout::JuMP.Variable, xin::JuMP.Variable, eps::Float64)
@@ -39,10 +39,9 @@ function binarystate!(sp::JuMP.Model, xout::JuMP.Variable, xin::JuMP.Variable, e
     nstates = bitsrequired(ub, eps)
     init = binexpand(float(getvalue(xin)), eps, length=nstates)
 
-    v, v0 = anonymousstate!(sp, nstates, init)
+    v, v0 = anonymousstate!(sp, nstates, init, JuMP.getname(xout), JuMP.getname(xin))
     @constraint(sp, xout == bincontract(Float64, v, eps))
     @constraint(sp, xin  == bincontract(Float64, v0, eps))
-
 end
 
 function binarystate!(sp::JuMP.Model, xout::Array{JuMP.Variable}, xin::Array{JuMP.Variable})
