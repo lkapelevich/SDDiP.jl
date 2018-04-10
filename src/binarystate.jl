@@ -154,7 +154,7 @@ macro binarystate(sp, x, x0, vtype_args...)
                 binarystate!($sp, $varout, $varin)
             end)
         else
-            # Continuouse case
+            # Continuous case
             push!(code.args, quote
                 binarystate!($sp, $varout, $varin, $(esc(eps)))
             end)

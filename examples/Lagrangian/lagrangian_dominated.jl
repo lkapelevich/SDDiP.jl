@@ -1,11 +1,6 @@
 # Example from Zhou et al., 2016, Stochastic Dual Integer Programming
 #
 
-# typo 2.6 <- 2.5
-# Need x ∈ [0, 1] in the second problem
-# The optimal dual is not unique
-# Not sure which point the strengthened benders cut comes from
-
 using JuMP, Gurobi, SDDiP
 
 # ===================================================
@@ -29,7 +24,7 @@ function Q(z1, z2)
     end)
     @constraints(m2, begin
         y <= 4
-        y >= 2.5 - 0.5x2 - 0.25x1
+        y >= 2.6 - 0.5x2 - 0.25x1
     end)
 
     c1 = @constraint(m2, x1 == z1)
@@ -49,9 +44,8 @@ function L(π1, π2, z1, z2)
     end)
     @constraints(m3, begin
         y <= 4
-        y >= 2.5 - 0.5x2 - 0.25x1
+        y >= 2.6 - 0.5x2 - 0.25x1
     end)
-    # @objective(m3, Min, 4y - π1 * (x1 - z1) - π2 * (x2 - z2))
     @objective(m3, Min, 4y - π1 * x1 - π2 * x2)
     m3
 end
@@ -71,16 +65,20 @@ lp     = LinearProgramData(m1.obj, [c1; c2], [100.0; 100.0], method=method)
 π = [0.0; 0.0]
 val, status = lagrangiansolve!(lp, m1, π)
 
-println(getobjectivevalue(m1))
+println("With Lagrangian solver")
+println("Objective at (0,0): ", getobjectivevalue(m1))
+println("Duals are:")
 println(m1.linconstrDuals[c1.idx])
 println(m1.linconstrDuals[c2.idx])
 
 # Note the primal is degenerate
 # ===================================================
 # With Benders
+println("With Benders")
 m2, c1, c2 = Q(z1, z2)
 solve(m2, relaxation=true)
-println(getobjectivevalue(m2))
+println("Objective at (0,0): ", getobjectivevalue(m2))
+println("Duals are:")
 println(m2.linconstrDuals[c1.idx])
 println(m2.linconstrDuals[c2.idx])
 
@@ -92,4 +90,5 @@ println(m2.linconstrDuals[c2.idx])
 m3 = L(π1, π2, z1, z2)
 solve(m3)
 # println(getobjectivevalue(m3) - (π1 * z1 + π2 * z2))
-println(getobjectivevalue(m3))
+println("Strengthened benders")
+println("Objective at (0,0): ", getobjectivevalue(m3))
