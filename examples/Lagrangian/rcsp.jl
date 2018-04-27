@@ -96,7 +96,7 @@ println("\n**** Solved using the subgradient method. **** ")
 dualbound = 50.0
 relaxed_bound = 100.0;
 
-subgradient = SubgradientMethod(dualbound, wait=20)
+subgradient = SubgradientMethod(initialbound=dualbound, wait=20)
 RCSPdata    = LinearProgramData(model.obj,
                                 [complicating],
                                 [relaxed_bound],
@@ -118,7 +118,7 @@ constr = model.linconstr[complicating.idx]
 
 println("\n**** Solved using the level method. **** ")
 
-levelmethod = LevelMethod(dualbound, quadsolver=IpoptSolver(print_level=0))
+levelmethod = LevelMethod(initialbound=dualbound, quadsolver=IpoptSolver(print_level=0))
 RCSPdata    = LinearProgramData(model.obj,
                                 [complicating],
                                 [relaxed_bound],

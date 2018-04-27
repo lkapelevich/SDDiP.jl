@@ -75,7 +75,7 @@ function bookingmanagementmodel(NUMBER_OF_DAYS, NUMBER_OF_ROOMS, NUMBER_OF_REQUE
             for room in 1:NUMBER_OF_ROOMS for day in 1:NUMBER_OF_DAYS
             )
         )
-        setSDDiPsolver!(sp, method=KelleyMethod(0.0))
+        setSDDiPsolver!(sp, method=KelleyMethod())
     end
 end
 
