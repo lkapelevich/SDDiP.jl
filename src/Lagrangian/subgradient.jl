@@ -11,13 +11,13 @@ tol            Tolerance for terminating
 wait           A parameter for reducing step sizes
 maxit          A cap on iterations
 """
-immutable SubgradientMethod{T<:Tolerance} <: AbstractLagrangianMethod
+mutable struct SubgradientMethod{T<:Tolerance} <: AbstractLagrangianMethod
     initialbound::Float64
     tol::T
     wait::Int
     maxit::Int
 end
-function SubgradientMethod(initialbound::Float64; tol=Unit(1e-6), wait=30, maxit=10_000)
+function SubgradientMethod(; initialbound=0.0, tol=Unit(1e-6), wait=30, maxit=10_000)
     SubgradientMethod(initialbound, tol, wait, maxit)
 end
 

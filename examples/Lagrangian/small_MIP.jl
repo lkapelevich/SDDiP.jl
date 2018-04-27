@@ -69,7 +69,7 @@ function solve_simple_MIP()
     objectivebound = 25.0
 
     # Use the Level Method
-    levelmethod = LevelMethod(objectivebound, quadsolver=IpoptSolver(print_level=0))
+    levelmethod = LevelMethod(initialbound=objectivebound, quadsolver=IpoptSolver(print_level=0))
     # Data for the Lagrangian solver
     MIPdata = LinearProgramData(model.obj,             # objective
                                 complicating_constrs,  # relaxed constraints
@@ -95,7 +95,7 @@ function solve_simple_MIP()
 
     # Use subgradient descent
     π0 = -[15.0; 20.0]
-    subgradient = SubgradientMethod(objectivebound)
+    subgradient = SubgradientMethod(initialbound=objectivebound)
     # Data for the Lagrangian solver
     MIPdata = LinearProgramData(model.obj,            # objective
                                 complicating_constrs, # relaxed constraints
@@ -120,7 +120,7 @@ function solve_simple_MIP()
     setobjectivesense(model, :Max)
     objectivebound = -25.0
     π0 = [15.0; 20.0]
-    subgradient   = SubgradientMethod(objectivebound)
+    subgradient   = SubgradientMethod(initialbound=objectivebound)
     MIPdata = LinearProgramData(-model.obj,           # objective
                                 complicating_constrs, # relaxed constraints
                                 relaxed_bounds,       # relaxed RHS of relaxed constraints

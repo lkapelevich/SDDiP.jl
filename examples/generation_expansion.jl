@@ -77,7 +77,7 @@ m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP
         penalty * data.penalty * data.hours)
 
     # Solve with the level method as the Lagrangian solver
-    setSDDiPsolver!(sp, method=LevelMethod(5e6, quadsolver=IpoptSolver(print_level=0)),
+    setSDDiPsolver!(sp, method = KelleyMethod(),
                         pattern = Pattern(benders=1, lagrangian=5, strengthened_benders=1),
                         LPsolver = GLPKSolverLP()
                         )

@@ -70,14 +70,14 @@ m = SDDPModel(
     @constraint(sp, stock == stock0 + buy - sell)
 
     # Call to solve via Lagrangians
-    # setSDDiPsolver!(sp, method=LevelMethod(-200.0, quadsolver=IpoptSolver(print_level=0)))
-    # setSDDiPsolver!(sp, method=SubgradientMethod(-200.0, wait=10))
-    setSDDiPsolver!(sp, method=KelleyMethod(-200.0))
+    # setSDDiPsolver!(sp, method=LevelMethod(quadsolver=IpoptSolver(print_level=0)))
+    # setSDDiPsolver!(sp, method=SubgradientMethod(wait=10))
+    setSDDiPsolver!(sp, method=KelleyMethod())
 
 end
 
 @time solvestatus = SDDP.solve(m,
-    max_iterations = 70
+    max_iterations = 12
 )
 
 @test isapprox(getbound(m), 97.9, atol=1e-3)

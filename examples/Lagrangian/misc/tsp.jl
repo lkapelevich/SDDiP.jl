@@ -84,7 +84,7 @@ function very_naive_solve(;relax=false)
         dualbound = 100.
         relaxed_bound = ncities * ones(length(m[:balance]))
 
-        method  = LevelMethod(dualbound, quadsolver=GurobiSolver(OutputFlag=0))
+        method  = LevelMethod(initialbound = dualbound, quadsolver=GurobiSolver(OutputFlag=0))
         # method  = SubgradientMethod(dualbound)
         TSPdata = LinearProgramData(m.obj,
                                     m[:balance],
@@ -218,7 +218,7 @@ function less_naive_relaxed()
     relaxed_bound = ncities * ones(length(m[:balance]))     # upper bound for the constraint wer are relaxing (something > 2, like ncities)
 
     # Method:
-    method  = LevelMethod(dualbound, quadsolver=GurobiSolver(OutputFlag=0))
+    method  = LevelMethod(initialbound = dualbound, quadsolver=GurobiSolver(OutputFlag=0))
     # method  = SubgradientMethod(dualbound, wait=20)
 
     # Linear program data

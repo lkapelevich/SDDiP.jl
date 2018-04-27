@@ -40,8 +40,8 @@ m=SDDPModel(stages=data.T, objective_bound=100.0, sense=:Max, solver=GLPKSolverM
     @stageobjective(sp, sum(data.R[i, stage] * accept_offer[i] for i=1:data.N))
 
     # Call for using a Lagrangian solver
-    setSDDiPsolver!(sp, method=LevelMethod(-100.0, quadsolver=IpoptSolver(print_level=0)))
-    # setSDDiPsolver!(sp, method=SubgradientMethod(-100.0))
+    setSDDiPsolver!(sp, method=LevelMethod(quadsolver=IpoptSolver(print_level=0)))
+    # setSDDiPsolver!(sp, method=SubgradientMethod())
 
 end
 

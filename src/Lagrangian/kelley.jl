@@ -11,12 +11,12 @@ The parameters for solving a Lagrangian dual with Kelley's method.
 * tol            Tolerance: we stop when the gap between our approximation of the function and the actual function value is less than `tol`
 * maxit          To terminate the method
 """
-immutable KelleyMethod{T<:Tolerance} <: AbstractLagrangianMethod
+mutable struct KelleyMethod{T<:Tolerance} <: AbstractLagrangianMethod
     initialbound::Float64   # starting bound for the Lagrangian dual problem
     tol::T                  # tolerance for terminating
     maxit::Int              # a cap on iterations
 end
-function KelleyMethod(initialbound::Float64; tol=Unit(1e-6), maxit=10_000)
+function KelleyMethod(; initialbound=0.0, tol=Unit(1e-6), maxit=10_000)
     KelleyMethod(initialbound, tol, maxit)
 end
 

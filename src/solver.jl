@@ -80,6 +80,9 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             sp.obj = l.obj
             Lagrangian.recover!(l, sp, π)
         else
+            # Update initial bound of the dual problem
+            @assert solve(sp) == :Optimal
+            l.method.initialbound = getobjectivevalue(sp)
             # Slacks have a new RHS each iteration, so update them
             l.slacks = getslack.(l.constraints)
             # Somehow choose duals to start with

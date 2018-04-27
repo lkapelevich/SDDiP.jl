@@ -59,7 +59,7 @@ z1, z2 = getvalue(x1), getvalue(x2)
 m1, c1, c2 = Q(z1, z2)
 # ===================================================
 # Solve the second problem using a Lagrangian solver
-method = LevelMethod(100.0, quadsolver=GurobiSolver(OutputFlag=0))
+method = LevelMethod(initialbound = 100.0, quadsolver=GurobiSolver(OutputFlag=0))
 # method = SubgradientMethod(100.0) # gap
 lp     = LinearProgramData(m1.obj, [c1; c2], [100.0; 100.0], method=method)
 π = [0.0; 0.0]

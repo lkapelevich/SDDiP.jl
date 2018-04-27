@@ -52,11 +52,11 @@ function airconditioningmodel()
         end
         @stageobjective(sp, 100 * production + 300 * overtime + 50 * stored_production)
         # Set integer solver
-        setSDDiPsolver!(sp, method=KelleyMethod(1e5), LPsolver=GLPKSolverLP(), pattern=Pattern(lagrangian=5, benders=1))
+        setSDDiPsolver!(sp, method=KelleyMethod(), LPsolver=GLPKSolverLP(), pattern=Pattern(lagrangian=5, benders=1))
     end
 end
 
 srand(1234)
 m = airconditioningmodel()
-solve(m, max_iterations=60)
+solve(m, max_iterations=10)
 @test isapprox(getbound(m), 62_500.0)

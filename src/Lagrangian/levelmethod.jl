@@ -12,14 +12,14 @@ tol            Tolerance: we stop when the gap between our approximation of the 
 solver         A quadratic solver
 maxit          To terminate the method
 """
-immutable LevelMethod{S<:JuMP.MathProgBase.AbstractMathProgSolver,T<:Tolerance} <: AbstractLagrangianMethod
+mutable struct LevelMethod{S<:JuMP.MathProgBase.AbstractMathProgSolver,T<:Tolerance} <: AbstractLagrangianMethod
     initialbound::Float64   # starting bound for the Lagrangian dual problem
     level::Float64          # parameter between 0 and 1
     tol::T                  # tolerance for terminating
     solver::S               # should be a quadratic solver
     maxit::Int              # a cap on iterations
 end
-function LevelMethod(initialbound::Float64; level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=10_000)
+function LevelMethod(; initialbound=0.0, level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=10_000)
     if quadsolver == UnsetSolver()
         error("You must specify a MathProgBase solver that can handle quadratic objective functions.")
     end

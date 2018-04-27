@@ -35,9 +35,9 @@
         @test_throws Exception Lagrangian.issatisfied(AffExpr(), :x)
     end
     @testset "LevelMethod" begin
-        @test_throws Exception levelmethod = LevelMethod(0.0, level=2, quadsolver=GLPKSolverMIP())
+        @test_throws Exception levelmethod = LevelMethod(initialbound=0.0, level=2, quadsolver=GLPKSolverMIP())
         # Need to specify quadsolver
-        @test_throws Exception levelmethod = LevelMethod(0.0)
+        @test_throws Exception levelmethod = LevelMethod(initialbound=0.0)
     end
     @testset "SubgradientDescent" begin
         @testset "CorrectSign" begin
@@ -74,7 +74,7 @@ end
         @objective(m, :Max, sum(x))
         solve(m)
 
-        subgradient = LevelMethod(-5., quadsolver=IpoptSolver(print_level=0))
+        subgradient = LevelMethod(initialbound=-5.0, quadsolver=IpoptSolver(print_level=0))
         relaxedbounds = [10.; -10.; 10.]
         l  = LinearProgramData(m.obj,
             [c1; c2; c3],
