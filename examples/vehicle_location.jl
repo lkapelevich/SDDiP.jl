@@ -109,7 +109,7 @@ end
 srand(1234)
 ambulancemodel = vehiclelocationmodel(3, [0, 20, 40, 60, 80, 100], 0:10:100)
 @assert solve(ambulancemodel, max_iterations=20) == :max_iterations
-@test isapprox(getbound(ambulancemodel), 1206.0, atol=5)
+@test getbound(ambulancemodel) >= 1206.0
 
 # Symmetry breaking constraints
 # @variables(sp, begin
