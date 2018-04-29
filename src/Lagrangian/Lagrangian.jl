@@ -10,6 +10,7 @@ lagrangiansolve!,
 LevelMethod,
 SubgradientMethod,
 KelleyMethod,
+BinaryMethod,
 # Structs to solve the primal
 LinearProgram,
 # Each method needs to know about the problem being solved
@@ -38,6 +39,7 @@ include("utils.jl")
 include("levelmethod.jl")
 include("subgradient.jl")
 include("kelley.jl")
+include("binaryduals.jl")
 
 """
     LinearProgramData(obj::QuadExpr, constraints::Vector{<:ConstraintRef}, relaxed_bounds::Vector{Float64}; method=LevelMethod(), problem_class=LinearProgram())

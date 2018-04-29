@@ -46,44 +46,60 @@ build(s::Symbol)  = getgen(s).b_cost
 use(s::Symbol)    = getgen(s).g_cost
 init(s::Symbol)   = getgen(s).init
 
-m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP()) do sp, stage
-    @binarystate(sp, invested[i = gentypes, j = 1:nunits(i)], invested0 == init(i)[j], Bin)
-    @variables(sp, begin
-        generation[gentypes] >= 0
-        penalty >= 0
-        demand
-    end)
+function build_model(lagrangian_method::Lagrangian.AbstractLagrangianMethod)
 
-    @constraints(sp, begin
-        # Can't un-invest
-        investment[i = gentypes, j = 1:nunits(i)], invested[i, j] >= invested0[i, j]
-        # Generation capacity
-        [i = gentypes], sum(invested[i, j] * maxgen(i) for j = 1:nunits(i)) >= generation[i]
-        # Meet demand or pay a penalty
-        penalty >= demand - sum(generation)
-        # Order the units to break symmetry, units are identical
-        [i = gentypes, j = 1:nunits(i)-1], invested[i, j] <= invested[i, j+1]
-    end)
+    m=SDDPModel(stages=data.T, objective_bound=0.0, sense=:Min, solver=GLPKSolverMIP()) do sp, stage
+        @binarystate(sp, invested[i = gentypes, j = 1:nunits(i)], invested0 == init(i)[j], Bin)
+        @variables(sp, begin
+            generation[gentypes] >= 0
+            penalty >= 0
+            demand
+        end)
 
-    # Demand is uncertain
-    @rhsnoise(sp, D=data.demand[stage,:], demand == D)
+        @constraints(sp, begin
+            # Can't un-invest
+            investment[i = gentypes, j = 1:nunits(i)], invested[i, j] >= invested0[i, j]
+            # Generation capacity
+            [i = gentypes], sum(invested[i, j] * maxgen(i) for j = 1:nunits(i)) >= generation[i]
+            # Meet demand or pay a penalty
+            penalty >= demand - sum(generation)
+            # Order the units to break symmetry, units are identical
+            [i = gentypes, j = 1:nunits(i)-1], invested[i, j] <= invested[i, j+1]
+        end)
 
-    # Handy calculation of the investment cost in this stage
-    @expression(sp, investment_cost[i = gentypes], build(i) * sum(invested[i, j] - invested0[i, j] for j = 1:nunits(i)))
+        # Demand is uncertain
+        @rhsnoise(sp, D=data.demand[stage,:], demand == D)
 
-    @stageobjective(sp,
-        sum(investment_cost[i] for i = gentypes) * data.rho ^ (stage - 1) +
-        sum(use(i) * generation[i] for i = gentypes) * data.hours * data.rho ^ (stage - 1) +
-        penalty * data.penalty * data.hours)
+        # Handy calculation of the investment cost in this stage
+        @expression(sp, investment_cost[i = gentypes], build(i) * sum(invested[i, j] - invested0[i, j] for j = 1:nunits(i)))
 
-    # Solve with the level method as the Lagrangian solver
-    setSDDiPsolver!(sp, method = KelleyMethod(),
-                        pattern = Pattern(benders=1, lagrangian=5, strengthened_benders=1),
-                        LPsolver = GLPKSolverLP()
-                        )
+        @stageobjective(sp,
+            sum(investment_cost[i] for i = gentypes) * data.rho ^ (stage - 1) +
+            sum(use(i) * generation[i] for i = gentypes) * data.hours * data.rho ^ (stage - 1) +
+            penalty * data.penalty * data.hours)
 
+        # Solve with the level method as the Lagrangian solver
+        setSDDiPsolver!(sp, method = lagrangian_method,
+                            pattern = Pattern(benders=0, lagrangian=5, strengthened_benders=1),
+                            LPsolver = GLPKSolverLP()
+                            )
+
+    end
 end
 
 srand(11111)
-status = solve(m, max_iterations=60)
-@assert isapprox(getbound(m), 460_533.0, atol=1e3)
+
+@testset "Kelleys" begin
+    m = build_model(KelleyMethod())
+    @time solvestatus = SDDP.solve(m,
+        max_iterations = 50
+    )
+    @test isapprox(getbound(m), 460_533.0, atol=1e2)
+end
+@testset "Binary" begin
+    m = build_model(BinaryMethod())
+    @time solvestatus = SDDP.solve(m,
+        max_iterations = 70
+    )
+    @test isapprox(getbound(m), 460_533.0, atol=1e2)
+end

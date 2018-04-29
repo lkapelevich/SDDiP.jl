@@ -33,51 +33,60 @@ Transition = Array{Float64, 2}[
     [0.3 0.7; 0.3 0.7]
   ]
 
-# Initialise SDDP Model
-m = SDDPModel(
-        sense             = :Max,
-        stages            = 3,
-        objective_bound   = 1000,
-        markov_transition = Transition,
-        solver            = GLPKSolverMIP()
-                                                ) do sp, stage, markov_state
+function build_model(lagrangian_method::Lagrangian.AbstractLagrangianMethod)
+    # Initialise SDDP Model
+    m = SDDPModel(
+            sense             = :Max,
+            stages            = 3,
+            objective_bound   = 1000,
+            markov_transition = Transition,
+            solver            = GLPKSolverMIP()
+                                                    ) do sp, stage, markov_state
 
-    # ====================
-    #   State variable: binary decomposition of stock
-    @binarystate(sp, stock <= 100, stock0 == 5, Int)
+        # ====================
+        #   State variable: binary decomposition of stock
+        @binarystate(sp, stock <= 100, stock0 == 5, Int)
 
-    # ====================
-    #   Other variables
-    @variables(sp, begin
-        buy >= 0, Int  # Quantity to buy
-        sell>= 0, Int  # Quantity to sell
-    end)
+        # ====================
+        #   Other variables
+        @variables(sp, begin
+            buy >= 0, Int  # Quantity to buy
+            sell>= 0, Int  # Quantity to sell
+        end)
 
 
-    # ====================
-    #   Scenarios
-    @rhsnoises(sp, D=Demand[stage,:], begin
-        sell <= D
-        sell >= 0.5D
-    end)
+        # ====================
+        #   Scenarios
+        @rhsnoises(sp, D=Demand[stage,:], begin
+            sell <= D
+            sell >= 0.5D
+        end)
 
-    # ====================
-    #   Objective
-    @stageobjective(sp, sell * RetailPrice - buy * PurchasePrice[markov_state])
+        # ====================
+        #   Objective
+        @stageobjective(sp, sell * RetailPrice - buy * PurchasePrice[markov_state])
 
-    # ====================
-    #   Dynamics constraint
-    @constraint(sp, stock == stock0 + buy - sell)
+        # ====================
+        #   Dynamics constraint
+        @constraint(sp, stock == stock0 + buy - sell)
 
-    # Call to solve via Lagrangians
-    # setSDDiPsolver!(sp, method=LevelMethod(quadsolver=IpoptSolver(print_level=0)))
-    # setSDDiPsolver!(sp, method=SubgradientMethod(wait=10))
-    setSDDiPsolver!(sp, method=KelleyMethod())
+        # Call to solve via Lagrangians
+        setSDDiPsolver!(sp, method=lagrangian_method)
 
+    end
 end
 
-@time solvestatus = SDDP.solve(m,
-    max_iterations = 12
-)
-
-@test isapprox(getbound(m), 97.9, atol=1e-3)
+@testset "Kelleys" begin
+    m = build_model(KelleyMethod())
+    @time solvestatus = SDDP.solve(m,
+        max_iterations = 12
+    )
+    @test isapprox(getbound(m), 97.9, atol=1e-3)
+end
+@testset "Binary" begin
+    m = build_model(BinaryMethod())
+    @time solvestatus = SDDP.solve(m,
+        max_iterations = 50
+    )
+    @test isapprox(getbound(m), 97.9, atol=1e-3)
+end
