@@ -43,5 +43,5 @@ for lagrangian_method in [KelleyMethod(),
     solvestatus = SDDP.solve(m,
         max_iterations = 8
     )
-    @test isapprox(getbound(m), 9.0, atol=1e-4)
+    @test isapprox(getbound(m), 9.0)
 end
