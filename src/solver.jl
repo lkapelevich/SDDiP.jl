@@ -1,5 +1,64 @@
 # Prepare a solvehook to solve via a Lagrangian relaxation in SDDP
 
+function make_dual_infeasible(sense::Symbol, pi::Float64, x::Float64)
+    if sense == :Max
+        y = 1.0 - x
+    else
+        y = x
+    end
+    if y ≈ 0.0
+        perturbup(pi)
+    else
+        perturbdown(pi)
+    end
+end
+
+function perturbup(pi::Float64)
+    if pi > 1e-6
+        pi * 1.5
+    elseif pi < -1e-6
+        0.0
+    else
+        1.0
+    end
+end
+function perturbdown(pi::Float64)
+    if pi < -1e-6
+        pi * 1.5
+    elseif pi > 1e-6
+        0.0
+    else
+        -1.0
+    end
+end
+
+"""
+    initial_dual(sp::JuMP.Model, π0::Vector{Float64})
+
+Finds an infeasible dual for `sp`.
+"""
+function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64})
+    # Actual function evaluated at given state
+    actual_bound = getobjectivevalue(sp)
+    # Flip the RHS of the first constraint
+    l = lagrangian(sp)
+    idx = l.constraints[1].idx
+    flip = 1.0 - sp.linconstr[idx].lb
+    sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip
+    # Get one numerical gradient (doesn't say anything about function elsewhere)
+    @assert solve(sp) == :Optimal
+    numerical_gradient = actual_bound - getobjectivevalue(sp)
+    sense = getobjectivesense(sp)
+    # Change RHS back to what it was
+    sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip
+    # Make dual infeasible by considering our one other evaluation
+    @inbounds for i = 1:length(l.constraints)
+        idx = l.constraints[i].idx
+        constr = sp.linconstr[idx]
+        π0[i] = make_dual_infeasible(sense, numerical_gradient, constr.lb)
+    end
+end
+
 # Overload how stage problems are solved in the backward pass
 function SDDP.JuMPsolve(::Type{SDDP.BackwardPass}, m::SDDPModel, sp::JuMP.Model)
     if sp.solvehook == nothing
@@ -107,6 +166,7 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             l.slacks = getslack.(l.constraints)
             # Somehow choose duals to start with
             π0 = zeros(length(l.constraints)) # or rand, or ones
+            # initialize_dual!(sp, π0)
             # Lagrangian objective and duals
             setsolver(sp, solvers.MIP)
             status, _ = lagrangiansolve!(l, sp, π0)
