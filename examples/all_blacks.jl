@@ -1,7 +1,7 @@
 using SDDiP, GLPKMathProgInterface, JuMP, SDDP, Base.Test
 # using Ipopt  # uncomment for the Level Method
 
-immutable AllBlacksData
+struct AllBlacksData
   T::Int                  # Number of time periods
   N::Int                  # Number of seats
   R::Array{Float64,2}     # R_ij = evenue from selling seat i at time j

@@ -19,13 +19,13 @@ getslack,
 isclose, closetozero,
 Absolute, Relative, Unit
 
-@compat abstract type AbstractLagrangianMethod end
-@compat abstract type AbstractProblemClass end
-immutable LinearProgram <: AbstractProblemClass end
+abstract type AbstractLagrangianMethod end
+abstract type AbstractProblemClass end
+struct LinearProgram <: AbstractProblemClass end
 
-type LinearProgramData{M<:AbstractLagrangianMethod, C<:AbstractProblemClass}
+mutable struct LinearProgramData{M<:AbstractLagrangianMethod, C<:AbstractProblemClass}
     obj::QuadExpr                                # objective
-    @compat constraints::Vector{<:ConstraintRef} # constraints being relaxed
+    constraints::Vector{<:ConstraintRef} # constraints being relaxed
     relaxed_bounds::Vector{Float64}             # bounds on constraints when we relax them
     senses::Vector{Symbol}                      # we will cache the sense of constraints
     slacks::Vector{AffExpr}                     # also cache Ax-b
@@ -51,7 +51,7 @@ Creates a `LinearProgramData` object for calling `lagrangiansolve!`.
 * method:            Solving parameters, of type `AbstractLagrangianMethod`.
 * problem_class:     To overload how the primal problem is solved.
 """
-@compat function LinearProgramData(obj::QuadExpr, constraints::Vector{<:ConstraintRef}, relaxed_bounds::Vector{Float64}; method=LevelMethod(), problem_class=LinearProgram())
+function LinearProgramData(obj::QuadExpr, constraints::Vector{<:ConstraintRef}, relaxed_bounds::Vector{Float64}; method=LevelMethod(), problem_class=LinearProgram())
     @assert length(constraints) == length(relaxed_bounds)
     LinearProgramData(obj, constraints,
         relaxed_bounds,
@@ -98,7 +98,7 @@ end
 
 Solve the Lagrangian dual problem.
 """
-lagrangian_method!{M<:AbstractLagrangianMethod}(l::LinearProgramData{M}, m::JuMP.Model, π::Vector{Float64}) = error("No solve method defined.")
+lagrangian_method!(l::LinearProgramData{M}, m::JuMP.Model, π::Vector{Float64}) where {M<:AbstractLagrangianMethod} = error("No solve method defined.")
 
 """
     lagrangiansolve!{M<:AbstractLagrangeinMethod}(l::LinearProgramData{M}, m::JuMP.Model, π::Vector{Float64})

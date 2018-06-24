@@ -3,14 +3,14 @@
 #
 using SDDP, GLPKMathProgInterface, JuMP, SDDiP, Ipopt
 
-immutable GenTech
+struct GenTech
     capacity::Float64   # maximum MW this generator technology can be built for
     b_cost::Float64     # cost to build
     g_cost::Float64     # cost to use
     nunits::Int         # maximum number of units we are happy to build
     init::Vector{Int}   # initial state
 end
-immutable GEPData
+struct GEPData
     T::Int                                  # planning duration
     demand::Array{Float64,2}                # power demand in each stage
     penalty::Float64                        # penalty per MW not met

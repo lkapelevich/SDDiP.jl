@@ -43,7 +43,7 @@ The Level Method (Lemarechal, Nemirovskii, Nesterov, 1992).
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!{S,T}(lp::LinearProgramData{LevelMethod{S,T}}, m::JuMP.Model, π::Vector{Float64})
+function lagrangian_method!(lp::LinearProgramData{LevelMethod{S,T}}, m::JuMP.Model, π::Vector{Float64}) where {S,T}
 
     levelmethod = lp.method
     N           = length(π)

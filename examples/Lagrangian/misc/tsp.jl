@@ -45,7 +45,7 @@ function nCx(n::Int, x::Int)
     end
     ret = div(ret, factorial(x))
 end
-function strict_subsets{T}(x::Vector{T})
+function strict_subsets(x::Vector{T}) where T
     n = length(x)
     n <= 1 && error("Vector length $n has no strict subsets.")
     y = Array{Array}(n-2)
@@ -148,11 +148,11 @@ function kruskals(costs::Vector{Float64}, edges::Vector{Tuple{Int,Int}}, nnodes:
     error("Something went wrong in Kruskal's. Perhaps you specified the wrong number of nodes.")
 end
 
-immutable SpanningTree <: Lagrangian.AbstractProblemClass end
+struct SpanningTree <: Lagrangian.AbstractProblemClass end
 
 # This could just be a solvehook with the current forumlation.
 # But if we get away from having to formulate the primal as a maths programming model altogether, even better...
-function Lagrangian.solve_primal{M<:AbstractLagrangianMethod, C<:SpanningTree}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
+function Lagrangian.solve_primal(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64}) where {M<:AbstractLagrangianMethod, C<:SpanningTree}
     # we arbitrarily chose to leave out the last city, we could leave out
     # any city or even better, try leave out one city at a time and find the worst case
     arcs = [(i, j) for i=1:ncities-2 for j=i+1:ncities-1]

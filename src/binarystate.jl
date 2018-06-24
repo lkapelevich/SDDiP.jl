@@ -10,7 +10,7 @@
 uberror(x) =  error("You must provide an upper bound on $(x).
     The lower the bound, the smaller the statespace.")
 
-@compat function anonymousstate!(sp::JuMP.Model, nstates::Int, initial::Vector{<:Real},
+function anonymousstate!(sp::JuMP.Model, nstates::Int, initial::Vector{<:Real},
                              nameout::AbstractString, namein::AbstractString)
     statein  = @variable(sp, [i=1:nstates], basename="_bin_$namein", start=initial[i])
     stateout = @variable(sp,   [1:nstates], basename="_bin_$nameout")

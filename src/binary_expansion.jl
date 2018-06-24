@@ -76,14 +76,14 @@ function binexpand(x::Float64, eps::Float64=0.1; length::Int=-1, maximum::Real=-
     binexpand(xx, length=length)
 end
 
-function bincontract_2i_{T}(y::Vector{T})
+function bincontract_2i_(y::Vector{T}) where T
     x = zero(T)
     @inbounds for i in 1:length(y)
         x += _2i_[i] * y[i]
     end
     x
 end
-function bincontract_pow{T}(y::Vector{T})
+function bincontract_pow(y::Vector{T}) where T
     x = zero(T)
     @inbounds for i in 1:length(y)
         x += 2^(i-1) * y[i]
@@ -96,7 +96,7 @@ end
 
 For vector `y`, evaluates ∑ᵢ 2ⁱ⁻¹yᵢ.
 """
-function bincontract{T}(y::Vector{T})
+function bincontract(y::Vector{T}) where T
     if length(y) < _2i_L
         bincontract_2i_(y)
     else
@@ -104,7 +104,7 @@ function bincontract{T}(y::Vector{T})
     end
 end
 
-function bincontract{T}(::Type{Float64}, y::Vector{T}, eps::Float64=0.1)
+function bincontract(::Type{Float64}, y::Vector{T}, eps::Float64=0.1) where T
     if eps <= 0
         error("Epsilon tolerance for Float binary contraction must be strictly greater than 0.")
     end

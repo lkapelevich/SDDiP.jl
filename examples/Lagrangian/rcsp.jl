@@ -4,7 +4,7 @@ using SDDiP, JuMP, Ipopt, Base.Test, GLPKMathProgInterface
 
 const JuMPversion = Pkg.installed("JuMP")
 
-immutable RCSPData
+struct RCSPData
     A::Array{Int,2}
     costs::Vector{Float64}
     resources::Vector{Float64}

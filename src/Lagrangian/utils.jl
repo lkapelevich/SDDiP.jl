@@ -19,7 +19,7 @@ function getslack(c::ConstraintRef)
     end
 end
 
-getdualsense(m::JuMP.Model) = getobjectivesense(m)==:Min? :Max : :Min
+getdualsense(m::JuMP.Model) = getobjectivesense(m)==:Min ? :Max : :Min
 
 function issatisfied(slack::Float64, sense::Symbol, tol=1e-9)
     if sense == :eq
@@ -32,14 +32,14 @@ function issatisfied(slack::Float64, sense::Symbol, tol=1e-9)
     error("Unknown sense $(sense).")
 end
 
-@compat abstract type Tolerance end
-immutable Absolute <: Tolerance
+abstract type Tolerance end
+struct Absolute <: Tolerance
     val::Float64
 end
-immutable Relative <: Tolerance
+struct Relative <: Tolerance
     val::Float64
 end
-immutable Unit <: Tolerance
+struct Unit <: Tolerance
     val::Float64
 end
 function isclose(f1::Float64, f2::Float64, tol::Tolerance)::Bool
@@ -59,7 +59,7 @@ function closetozero(gap::Float64, f1::Float64, f2::Float64, tol::Unit)::Bool
     return abs(gap) / (1 + min(abs(f1), abs(f2))) < tol.val
 end
 
-function setlagrangianobjective!{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
+function setlagrangianobjective!(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64}) where {M<:AbstractLagrangianMethod, C<:LinearProgram}
     if getobjectivesense(m) == :Min
         if length(d.obj.qvars1) == 0
             @objective(m, :Min, d.obj.aff + dot(π, d.slacks))
@@ -76,7 +76,7 @@ function setlagrangianobjective!{M<:AbstractLagrangianMethod, C<:LinearProgram}(
 end
 
 # For a fixed π, solve minₓ{L = cᵀx + πᵀ(Ax-b)} or maxₓ{L = cᵀx - πᵀ(Ax-b)}
-function solve_primal{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64})
+function solve_primal(m::JuMP.Model, d::LinearProgramData{M, C}, π::Vector{Float64}) where {M<:AbstractLagrangianMethod, C<:LinearProgram}
     # Set the Lagrangian the objective in the primal model
     setlagrangianobjective!(m, d, π)
     if getobjectivesense(m) == :Min
@@ -88,4 +88,4 @@ function solve_primal{M<:AbstractLagrangianMethod, C<:LinearProgram}(m::JuMP.Mod
     getobjectivevalue(m)::Float64, getvalue(subgradient)::Vector{Float64}
 end
 
-immutable UnsetSolver <: JuMP.MathProgBase.AbstractMathProgSolver end
+struct UnsetSolver <: JuMP.MathProgBase.AbstractMathProgSolver end
