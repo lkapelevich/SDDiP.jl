@@ -44,7 +44,7 @@ Solve the Lagrangian dual of a linear program using subgradient descent.
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!{T}(lp::LinearProgramData{SubgradientMethod{T}}, m::JuMP.Model, π::Vector{Float64})
+function lagrangian_method!(lp::LinearProgramData{SubgradientMethod{T}}, m::JuMP.Model, π::Vector{Float64}) where T
 
     subgradient = lp.method
     tol = subgradient.tol

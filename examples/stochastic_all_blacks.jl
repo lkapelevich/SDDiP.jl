@@ -4,7 +4,7 @@
 using SDDP, GLPKMathProgInterface, JuMP, SDDiP, Base.Test
 using Ipopt
 
-immutable AllBlacksData2
+struct AllBlacksData2
     T::Int                        # Number of time periods
     N::Int                        # Number of seats
     R::Array{Float64,2}           # R_ij = price of seat i at time j

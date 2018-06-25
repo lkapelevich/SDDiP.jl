@@ -11,13 +11,13 @@ end
 
 lagrangian(m::JuMP.Model) = m.ext[:Lagrangian]
 
-immutable MixedSolvers
+struct MixedSolvers
     LP::JuMP.MathProgBase.AbstractMathProgSolver
     MIP::JuMP.MathProgBase.AbstractMathProgSolver
 end
 
 # Just handy caching
-immutable IncreasingPattern
+struct IncreasingPattern
     benders::Int
     strengthenedbenders::Int
     lagrangian::Int

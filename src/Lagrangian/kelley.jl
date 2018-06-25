@@ -33,7 +33,7 @@ Kelley's method with a lazy callback approach.
 # Returns
 * status, objective, and modifies π
 """
-function lagrangian_method!{T}(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.Model, π::Vector{Float64})
+function lagrangian_method!(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.Model, π::Vector{Float64}) where T
 
     kelleys = lp.method
     N      = length(π)

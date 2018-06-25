@@ -2,7 +2,7 @@ using JuMP, Ipopt, SDDiP, GLPKMathProgInterface, Base.Test
 
 const JuMPversion = Pkg.installed("JuMP")
 
-type MIPData
+mutable struct MIPData
     A::Array{Float64,2}
     b::Array{Float64,1}
     c::Array{Float64,1}
