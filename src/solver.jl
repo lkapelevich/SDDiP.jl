@@ -40,20 +40,25 @@ Finds an infeasible dual for `sp`.
 function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64})
     # Actual function evaluated at given state
     actual_bound = getobjectivevalue(sp)
-    # Flip the RHS of the first constraint
+    # Flip the RHS of all constraints corresponding to all state variables
     l = lagrangian(sp)
-    idx = l.constraints[1].idx
-    flip = 1.0 - sp.linconstr[idx].lb
-    sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip
+    C = length(l.constraints)
+    flip = zeros(C)
+    @inbounds for i = 1:C
+        idx = l.constraints[i].idx
+        flip[i] = 1.0 - sp.linconstr[idx].lb
+        sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip[i]
+    end
     # Get one numerical gradient (doesn't say anything about function elsewhere)
     @assert solve(sp) == :Optimal
-    numerical_gradient = actual_bound - getobjectivevalue(sp)
     sense = getobjectivesense(sp)
-    # Change RHS back to what it was
-    sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip
-    # Make dual infeasible by considering our one other evaluation
+    diff = actual_bound - getobjectivevalue(sp)
     @inbounds for i = 1:length(l.constraints)
         idx = l.constraints[i].idx
+        numerical_gradient = diff .* (flip[i] - sp.linconstr[idx].ub)
+        # Change RHS back
+        sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip[i]
+        # Make dual infeasible by considering our one other evaluation
         constr = sp.linconstr[idx]
         π0[i] = make_dual_infeasible(sense, numerical_gradient, constr.lb)
     end
@@ -166,7 +171,7 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             l.slacks = getslack.(l.constraints)
             # Somehow choose duals to start with
             π0 = zeros(length(l.constraints)) # or rand, or ones
-            # initialize_dual!(sp, π0)
+            initialize_dual!(sp, π0)
             # Lagrangian objective and duals
             setsolver(sp, solvers.MIP)
             status, _ = lagrangiansolve!(l, sp, π0)

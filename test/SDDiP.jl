@@ -86,6 +86,10 @@ end
     @test binexpand(0.56, 0.01, maximum=2.55) == binexpand(56, length=8)
 end
 
+@testset "Solver functions" begin
+    include("solver.jl")
+end
+
 @testset "SDDiP Examples" begin
 for example in [
         "SDDiPnewsvendor.jl",
