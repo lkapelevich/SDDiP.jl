@@ -32,12 +32,28 @@ function perturbdown(pi::Float64)
     end
 end
 
-"""
-    initial_dual(sp::JuMP.Model, π0::Vector{Float64})
-
-Finds an infeasible dual for `sp`.
-"""
-function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64})
+function initialize_dual_one!(sp::JuMP.Model, π0::Vector{Float64})
+    # Actual function evaluated at given state
+    actual_bound = getobjectivevalue(sp)
+    l = lagrangian(sp)
+    sense = getobjectivesense(sp)
+    @inbounds for i = 1:length(l.constraints)
+        # Flip the RHS
+        idx = l.constraints[i].idx
+        flip = 1.0 - sp.linconstr[idx].lb
+        sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip
+        # Get one numerical gradient (doesn't say anything about function elsewhere)
+        @assert solve(sp) == :Optimal
+        diff = getobjectivevalue(sp) - actual_bound
+        numerical_gradient = diff * (2.0 * flip - 1.0)
+        # Change RHS back
+        sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip
+        # Make dual infeasible by considering our one other evaluation
+        constr = sp.linconstr[idx]
+        π0[i] = make_dual_infeasible(sense, numerical_gradient, constr.lb)
+    end
+end
+function initialize_dual_all!(sp::JuMP.Model, π0::Vector{Float64})
     # Actual function evaluated at given state
     actual_bound = getobjectivevalue(sp)
     # Flip the RHS of all constraints corresponding to all state variables
@@ -49,18 +65,32 @@ function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64})
         flip[i] = 1.0 - sp.linconstr[idx].lb
         sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip[i]
     end
+    println(sp)
     # Get one numerical gradient (doesn't say anything about function elsewhere)
     @assert solve(sp) == :Optimal
     sense = getobjectivesense(sp)
-    diff = actual_bound - getobjectivevalue(sp)
+    diff = getobjectivevalue(sp) - actual_bound
     @inbounds for i = 1:length(l.constraints)
         idx = l.constraints[i].idx
-        numerical_gradient = diff .* (flip[i] - sp.linconstr[idx].ub)
+        numerical_gradient = diff * (2.0 * flip[i] - 1.0)
         # Change RHS back
         sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip[i]
         # Make dual infeasible by considering our one other evaluation
         constr = sp.linconstr[idx]
         π0[i] = make_dual_infeasible(sense, numerical_gradient, constr.lb)
+    end
+end
+
+"""
+    initial_dual(sp::JuMP.Model, π0::Vector{Float64})
+
+Finds an infeasible dual for `sp`.
+"""
+function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64}, use_one_neighbors::Bool=true)
+    if use_one_neighbors
+        initialize_dual_one!(sp, π0)
+    else
+        initialize_dual_all!(sp, π0)
     end
 end
 

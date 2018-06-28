@@ -45,7 +45,7 @@ function build_model(lagrangian_method::Lagrangian.AbstractLagrangianMethod)
 
         # ====================
         #   State variable: binary decomposition of stock
-        @binarystate(sp, stock <= 100, stock0 == 5, Int)
+        @binarystate(sp, stock <= 127, stock0 == 5, Int)
 
         # ====================
         #   Other variables

@@ -34,7 +34,7 @@ function airconditioningmodel()
                  solver = GLPKSolverMIP()
                             ) do sp, stage
         # number of units
-        @binarystate(sp, 0 <= stored_production <= 900, incoming_storage == 0, Int)
+        @binarystate(sp, 0 <= stored_production <= 1023, incoming_storage == 0, Int)
         # @state(sp, stored_production >= 0, incoming_storage == 0)
         @variables(sp, begin
             # number of units produced during normal production
