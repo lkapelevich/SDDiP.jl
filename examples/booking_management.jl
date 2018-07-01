@@ -16,7 +16,7 @@
 =#
 using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP
 
-function bookingmanagementmodel(NUMBER_OF_DAYS, NUMBER_OF_ROOMS, NUMBER_OF_REQUESTS)
+function bookingmanagementmodel(NUMBER_OF_DAYS, NUMBER_OF_ROOMS, NUMBER_OF_REQUESTS, lagrangian_method)
 
     # maximum revenue that could be accrued.
     MAX_REVENUE = (NUMBER_OF_ROOMS + NUMBER_OF_REQUESTS) * NUMBER_OF_DAYS * NUMBER_OF_ROOMS
@@ -75,16 +75,18 @@ function bookingmanagementmodel(NUMBER_OF_DAYS, NUMBER_OF_ROOMS, NUMBER_OF_REQUE
             for room in 1:NUMBER_OF_ROOMS for day in 1:NUMBER_OF_DAYS
             )
         )
-        setSDDiPsolver!(sp, method=KelleyMethod())
+        setSDDiPsolver!(sp, method=lagrangian_method)
     end
 end
 
-srand(1234)
-m_1_2_5 = bookingmanagementmodel(1, 2, 5)
-@test solve(m_1_2_5, max_iterations = 10) == :iteration_limit 
-@test isapprox(getbound(m_1_2_5), 7.25, atol=0.001)
+for lagrangian_method in [KelleyMethod()] #, BinaryMethod()]
+    srand(1234)
+    m_1_2_5 = bookingmanagementmodel(1, 2, 5, lagrangian_method)
+    @test solve(m_1_2_5, max_iterations = 10) == :iteration_limit
+    @test isapprox(getbound(m_1_2_5), 7.25, atol=0.001)
 
-srand(1234)
-m_2_2_3 = bookingmanagementmodel(2, 2, 3)
-@test solve(m_2_2_3, max_iterations = 90) == :iteration_limit 
-@test isapprox(getbound(m_2_2_3), 6.13, atol=0.001)
+    srand(1234)
+    m_2_2_3 = bookingmanagementmodel(2, 2, 3, lagrangian_method)
+    @test solve(m_2_2_3, max_iterations = 90) == :iteration_limit
+    @test isapprox(getbound(m_2_2_3), 6.13, atol=0.001)
+end

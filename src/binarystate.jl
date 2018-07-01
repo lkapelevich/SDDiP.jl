@@ -136,7 +136,7 @@ macro binarystate(sp, x, x0, vtype_args...)
         end
         if isa(xin, Expr)                   # x has indices
             xin.args[1] = symin             # so just change the name
-        else                                # its just a Symbol
+        else                                # it's just a Symbol
             xin = symin                     # so change the Symbol
         end
 

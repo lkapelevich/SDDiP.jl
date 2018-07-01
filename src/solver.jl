@@ -50,7 +50,8 @@ function initialize_dual_one!(sp::JuMP.Model, π0::Vector{Float64})
         sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip
         # Make dual infeasible by considering our one other evaluation
         constr = sp.linconstr[idx]
-        π0[i] = make_dual_infeasible(sense, numerical_gradient, constr.lb)
+        # The Lagrangian multiplier is the negative of the LP dual = rate of change
+        π0[i] = -make_dual_infeasible(sense, numerical_gradient, constr.lb)
     end
 end
 function initialize_dual_all!(sp::JuMP.Model, π0::Vector{Float64})
@@ -65,7 +66,6 @@ function initialize_dual_all!(sp::JuMP.Model, π0::Vector{Float64})
         flip[i] = 1.0 - sp.linconstr[idx].lb
         sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip[i]
     end
-    println(sp)
     # Get one numerical gradient (doesn't say anything about function elsewhere)
     @assert solve(sp) == :Optimal
     sense = getobjectivesense(sp)
@@ -77,7 +77,8 @@ function initialize_dual_all!(sp::JuMP.Model, π0::Vector{Float64})
         sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip[i]
         # Make dual infeasible by considering our one other evaluation
         constr = sp.linconstr[idx]
-        π0[i] = make_dual_infeasible(sense, numerical_gradient, constr.lb)
+        # The Lagrangian multiplier is the negative of the LP dual = rate of change
+        π0[i] = -make_dual_infeasible(sense, numerical_gradient, constr.lb)
     end
 end
 

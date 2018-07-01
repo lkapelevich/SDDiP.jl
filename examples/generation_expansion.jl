@@ -80,7 +80,7 @@ function build_model(lagrangian_method::Lagrangian.AbstractLagrangianMethod)
 
         # Solve with the level method as the Lagrangian solver
         setSDDiPsolver!(sp, method = lagrangian_method,
-                            pattern = Pattern(benders=0, lagrangian=5, strengthened_benders=1),
+                            pattern = Pattern(benders=0, lagrangian=5, strengthened_benders=0),
                             LPsolver = GLPKSolverLP()
                             )
 
@@ -88,7 +88,6 @@ function build_model(lagrangian_method::Lagrangian.AbstractLagrangianMethod)
 end
 
 srand(11111)
-
 @testset "Kelleys" begin
     m = build_model(KelleyMethod())
     @time solvestatus = SDDP.solve(m,
@@ -96,10 +95,11 @@ srand(11111)
     )
     @test isapprox(getbound(m), 460_533.0, atol=1e2)
 end
-@testset "Binary" begin
-    m = build_model(BinaryMethod())
-    @time solvestatus = SDDP.solve(m,
-        max_iterations = 70
-    )
-    @test isapprox(getbound(m), 460_533.0, atol=1e2)
-end
+srand(11111)
+# @testset "Binary" begin
+#     m = build_model(BinaryMethod())
+#     @time solvestatus = SDDP.solve(m,
+#         max_iterations = 70
+#     )
+#     @test isapprox(getbound(m), 460_533.0, atol=1e2)
+# end

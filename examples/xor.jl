@@ -19,11 +19,11 @@ function build_xor(x0::Vector{Float64})
             end)
         end
         # Set Lagrangian solver
-        setSDDiPsolver!(sp, method=BinaryMethod())
+        setSDDiPsolver!(sp, method=KelleyMethod())
     end
 end
 m = build_xor(zeros(2))
 solvestatus = SDDP.solve(m,
-    max_iterations = 2
+    iteration_limit = 2
 )
 @test isapprox(getbound(m), 0.0, atol=1e-4)

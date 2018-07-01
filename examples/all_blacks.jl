@@ -35,10 +35,11 @@ function build_model(lagrangian_method::Lagrangian.AbstractLagrangianMethod)
 end
 
 for lagrangian_method in [KelleyMethod(),
-                BinaryMethod(),
+                # BinaryMethod(),
                 LevelMethod(quadsolver=IpoptSolver(print_level=0)),
                 SubgradientMethod()
             ]
+    srand(11111)
     m = build_model(lagrangian_method)
     solvestatus = SDDP.solve(m,
         max_iterations = 8

@@ -24,7 +24,7 @@
 =#
 using SDDP, JuMP, GLPKMathProgInterface, Base.Test, SDDiP
 
-function airconditioningmodel()
+function airconditioningmodel(lagrangian_method)
     m = SDDPModel(
                  stages = 3,
                  # example for issue #64
@@ -52,11 +52,13 @@ function airconditioningmodel()
         end
         @stageobjective(sp, 100 * production + 300 * overtime + 50 * stored_production)
         # Set integer solver
-        setSDDiPsolver!(sp, method=KelleyMethod(), LPsolver=GLPKSolverLP(), pattern=Pattern(lagrangian=5, benders=1))
+        setSDDiPsolver!(sp, method=lagrangian_method, LPsolver=GLPKSolverLP(), pattern=Pattern(lagrangian=1, benders=0))
     end
 end
 
-srand(1234)
-m = airconditioningmodel()
-solve(m, max_iterations=10)
-@test isapprox(getbound(m), 62_500.0)
+for lagrangian_method in [KelleyMethod()] #, BinaryMethod()]
+    srand(1234)
+    m = airconditioningmodel(lagrangian_method)
+    solve(m, max_iterations=40)
+    @test isapprox(getbound(m), 62_500.0)
+end
