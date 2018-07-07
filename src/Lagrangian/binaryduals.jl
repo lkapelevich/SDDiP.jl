@@ -38,26 +38,29 @@ function lagrangian_method!{T}(lp::LinearProgramData{BinaryMethod{T}}, m::JuMP.M
     # To make things easier, make primal always min, dual always max
     reversed = false
     if getobjectivesense(m) == :Max
-        lp.obj *= -1
-        mipobj *= -1
+        lp.obj *= -1.0
+        mipobj *= -1.0
         setobjectivesense(m, :Min)
         reversed = true
     end
 
     n = length(π)
-    π .= 0.0
-    # @show π
+    # π .= 0.0
+    @show π
     # we will sample the Lagrangian at pi = 0
     bound, direction = solve_primal(m, lp, π)
+    println(m)
+    @show mipobj, bound, direction
+    @show getvalue(m[:x1_0]), getvalue(m[:x2_0]), getvalue(m[:y])
     # this setup makes it possible to cycle when 0 is one of many
     # subgradients. need to test not if abs(direction[i]) < 1e-6,
     # but if meeting relaxed i^th constraint doesn't change objective
-    # iter = 0
+    iter = 0
     # lockin = Int[]
     while !isclose(mipobj, bound, tol)
-        # iter += 1
-        # @show direction
-        # @show iter
+        iter += 1
+        @show direction
+        @show iter
         # Santity check
         @assert bound <= mipobj + 1e-6
         @inbounds for i = 1:n
@@ -68,9 +71,11 @@ function lagrangian_method!{T}(lp::LinearProgramData{BinaryMethod{T}}, m::JuMP.M
                 continue
             end
             π[i] += 1 / direction[i] * (mipobj - bound)
+            @show π
         end
         bound, direction = solve_primal(m, lp, π)
     end
+    # @show iter
     # Undo transformation if needed
     if reversed
         π .*= -1

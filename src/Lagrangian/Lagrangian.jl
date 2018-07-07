@@ -94,6 +94,34 @@ function recover!(l::LinearProgramData, m::JuMP.Model, π::Vector{Float64})
         end
     end
 end
+function relaxandcache!(l::LinearProgramData, m::JuMP.Model, i::Int)
+    con = m.linconstr[l.constraints[i].idx]
+    if l.senses[i] == :le
+        l.old_bound[i] = con.ub
+        con.ub = l.relaxed_bounds[i]
+    elseif l.senses[i] == :ge
+        l.old_bound[i] = con.lb
+        con.lb = l.relaxed_bounds[i]
+    else
+        l.old_bound[i] = con.lb
+        con.ub =  l.relaxed_bounds[i]
+        con.lb = -Inf
+    end
+end
+function recover!(l::LinearProgramData, m::JuMP.Model, π::Vector{Float64}, i::Int)
+    c = l.constraints[i]
+    con = m.linconstr[c.idx]
+    for j = 1:i
+        m.linconstrDuals[l.constraints[j].idx] = -π[j]
+    end
+    if l.senses[i] == :le
+        con.ub = l.old_bound[i]
+    elseif l.senses[i] == :ge
+        con.lb = l.old_bound[i]
+    else
+        con.lb = con.ub = l.old_bound[i]
+    end
+end
 
 """
     lagrangian_method!{M<:AbstractLagrangianMethod}(l::LinearProgramData{M}, m::JuMP.Model, π::Vector{Float64})
@@ -107,16 +135,20 @@ lagrangian_method!(l::LinearProgramData{M}, m::JuMP.Model, π::Vector{Float64}) 
 
 Relax the primal, solve the Lagrangian dual, reset the primal.
 """
-function lagrangiansolve!(l::LinearProgramData, m::JuMP.Model, π::Vector{Float64})
+function lagrangiansolve!(l::LinearProgramData, m::JuMP.Model, π::Vector{Float64}, exclusive::Int=-1)
 
     @assert length(π) == length(l.constraints)
     @assert !isempty(l.constraints)
 
     # Relax bounds, cache old bounds
-    relaxandcache!(l, m)
+    if exclusive == -1
+        relaxandcache!(l, m)
+    else
+        relaxandcache!(l, m, exclusive)
+    end
 
     # Solve
-    status, obj = lagrangian_method!(l, m, π)
+    status, obj, kmodel = lagrangian_method!(l, m, π)
 
     # Set objective
     m.objVal = obj
@@ -124,9 +156,13 @@ function lagrangiansolve!(l::LinearProgramData, m::JuMP.Model, π::Vector{Float6
     m.obj = l.obj
 
     # Set duals and reset constraint bounds
-    recover!(l, m, π)
+    if exclusive == -1
+        recover!(l, m, π)
+    else
+        recover!(l, m, π, exclusive)
+    end
 
-    return status, obj
+    return status, obj, kmodel
 end
 
 end # module

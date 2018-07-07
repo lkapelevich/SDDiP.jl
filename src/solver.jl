@@ -32,6 +32,46 @@ function perturbdown(pi::Float64)
     end
 end
 
+function strengthendual!(lp::LinearProgramData, sp::JuMP.Model, π::Vector{Float64}, kelleymodel::JuMP.Model)
+    # We start with a feasible dual vector
+    # @show π
+    @inbounds for i = 1:length(lp.constraints)
+        # We make one component infeasible
+        initialize_dual_one!(sp, π, i)
+        # @show "infeasible π", π
+        Lagrangian.relaxandcache!(lp, sp, i)
+        strengthen_kelley!(lp, sp, π, kelleymodel, i)
+        sp.obj = lp.obj
+        Lagrangian.recover!(lp, sp, π, i)
+        # @show sp.linconstrDuals
+        # Make dual strong in that direction, only relaxing a single constraint
+        # temp_lp = LinearProgramData(QuadExpr(getobjective(sp)), lp.constraints, lp.relaxed_bounds, method=BinaryMethod())
+        # lagrangiansolve!(temp_lp, sp, π, i)
+        # @show "strong π", π
+    end
+    # @show π
+end
+
+function initialize_dual_one!(sp::JuMP.Model, π0::Vector{Float64}, i::Int)
+    # Actual function evaluated at given state
+    actual_bound = getobjectivevalue(sp)
+    l = lagrangian(sp)
+    sense = getobjectivesense(sp)
+    # Flip the RHS
+    idx = l.constraints[i].idx
+    flip = 1.0 - sp.linconstr[idx].lb
+    sp.linconstr[idx].lb = sp.linconstr[idx].ub = flip
+    # Get one numerical gradient (doesn't say anything about function elsewhere)
+    @assert solve(sp) == :Optimal
+    diff = getobjectivevalue(sp) - actual_bound
+    numerical_gradient = diff * (2.0 * flip - 1.0)
+    # Change RHS back
+    sp.linconstr[idx].lb = sp.linconstr[idx].ub = 1.0 - flip
+    # Make dual infeasible by considering our one other evaluation
+    constr = sp.linconstr[idx]
+    # The Lagrangian multiplier is the negative of the LP dual = rate of change
+    π0[i] = -make_dual_infeasible(sense, numerical_gradient, constr.lb)
+end
 function initialize_dual_one!(sp::JuMP.Model, π0::Vector{Float64})
     # Actual function evaluated at given state
     actual_bound = getobjectivevalue(sp)
@@ -87,7 +127,7 @@ end
 
 Finds an infeasible dual for `sp`.
 """
-function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64}, use_one_neighbors::Bool=true)
+function initialize_dual!(sp::JuMP.Model, π0::Vector{Float64}, use_one_neighbors::Bool=false)
     if use_one_neighbors
         initialize_dual_one!(sp, π0)
     else
@@ -205,7 +245,8 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             initialize_dual!(sp, π0)
             # Lagrangian objective and duals
             setsolver(sp, solvers.MIP)
-            status, _ = lagrangiansolve!(l, sp, π0)
+            status, _, kelleymodel = lagrangiansolve!(l, sp, π0)
+            strengthendual!(l, sp, π0, kelleymodel)
         end
         sp.obj = l.obj
     else
