@@ -64,6 +64,28 @@ Here `l` is the object from (2) and `m` is the primal model.
  * :iterationLimit - this means that the solution did not converge after the maximum number of iterations specified
 
 ## Solve methods
+In `SDDiP.jl`, the value of the field `initialbound` for all the methods below
+will be ignored. This is because we can find the actual objective of the
+Lagrangian dual of any mixed-integer subproblem simply by solving
+it (it is only the dual multipliers we are interested in finding). We will
+always set `initialbound` to the actual objective of our subproblems.
+
+In general, `Lagrangian.jl` can be used to find the objective of LPs/MIPs with complicating constraints that are never explicitly included and
+an `initialbound` will affect the method.
+
+
+#### Kelley's Cutting Planes
+Passing a `KelleyMethod` type object to `LinearProgramData` means we solve the Lagrangian dual with Kelley's cutting-plane method.
+
+The definition of the constructor is:
+```julia
+KelleyMethod(; initialbound=0.0, tol=Unit(1e-6), maxit=10_000)
+```
+The arguments are as follows.
+
+* initialbound:   Initial upper or lower bound for the Lagrangian dual,
+* tol:            Tolerance for stopping, see **Tolerances**,
+* maxit:          Maximum number of iterations before terminating the method.
 
 #### Level Method
 Passing a `LevelMethod` type object to `LinearProgramData` means we solve the Lagrangian
@@ -71,7 +93,7 @@ using the level method (Lemarechal, Nemirovskii, Nesterov, 1992).
 
 The definition of the constructor is:
 ```julia
-LevelMethod(initialbound::Float64; level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=1e4)
+LevelMethod(; initialbound::Float64, level=0.5, tol=Unit(1e-6), quadsolver=UnsetSolver(), maxit=10_000)
 ```
 The arguments are as follows.
 
@@ -87,7 +109,7 @@ Lagrangian using a subgradient descent with *Polyak's* stepsizes.
 
 The definition of the constructor is:
 ```julia
-SubgradientMethod(initialbound::Float64; tol=Unit(1e-6), wait=30, maxit=1e4)
+SubgradientMethod(; initialbound::Float64, tol=Unit(1e-6), wait=30, maxit=10_000)
 ```
 
 The arguments are as follows.
