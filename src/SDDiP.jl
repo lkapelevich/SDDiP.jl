@@ -13,4 +13,5 @@ using SDDP, JuMP, Compat, Reexport
 include("solver.jl")
 include("binary_expansion.jl")
 include("binarystate.jl")
+include("strengthening.jl")
 end

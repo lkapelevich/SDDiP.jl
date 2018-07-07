@@ -87,6 +87,7 @@ function lagrangian_method!(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.Mode
             end
         else
             @constraint(approx_model, θ <= f_actual + dot(fdash, x - π))
+            # println(f_actual + dot(fdash, x - π))
             if f_actual > best_actual
                 best_actual = f_actual
                 bestmult .= π
@@ -110,13 +111,14 @@ function lagrangian_method!(lp::LinearProgramData{KelleyMethod{T}}, m::JuMP.Mode
             if dualsense == :Min
                 π .*= -1 # bestmult not the same as getvalue(x), approx_model may have just gotten lucky
             end
-            return :Optimal, best_actual::Float64
+            # @show bestmult
+            return :Optimal, best_actual::Float64, approx_model
         end
 
         # Get the next iterate
         π .= getvalue(x)
     end
     warn("Lagrangian relaxation did not solve properly.")
-    return :IterationLimit, f_approx::Float64
+    return :IterationLimit, f_approx::Float64, approx_model
 
 end
