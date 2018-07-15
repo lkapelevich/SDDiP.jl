@@ -18,20 +18,21 @@ Integer Programs with Binary State Variables.
 Pkg.clone("https://github.com/lkapelevich/SDDiP.jl")
 ```
 
-This package uses [@odow](https://github.com/odow/ "")'s SDDP package, SDDP.jl:
+This package is built upon [@odow](https://github.com/odow/ "")'s SDDP package, [`SDDP.jl`](https://github.com/odow/SDDP.jl "SDDP.jl"):
 ```julia
 Pkg.clone("https://github.com/odow/SDDP.jl")
 ```
 
 ## Usage
-
 Note there are some examples in the *examples* folder.
+
+The first step is to become familiar with `SDDP.jl`. For this, have a look at the `SDDP.jl` [documentation](https://odow.github.io/SDDP.jl/latest/ "SDDP.jl latest").
 
 ### Calling the solver
 Using `SDDP.jl`, a user should include a call to `setSDDiPsolver!` at the end of a stage problem definition:
 
 ```julia
-setSDDiPsolver!(sp::JuMP.Model; method=Subgradient(0.0), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=MIPsolver)
+setSDDiPsolver!(sp::JuMP.Model; method=KelleyMethod(), pattern=Pattern(), MIPsolver=sp.solver, LPsolver=MIPsolver)
 ```
 The keyword arguments are as follows.
 * `method`: An `AbstractLagrangianMethod` object from that defines how the Lagrangian will be solved. See the readme in *src/Lagrangian*.
