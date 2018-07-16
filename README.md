@@ -74,7 +74,7 @@ If a precision is not specified, the default precision is 0.1.
 #### Pattern
 The Pattern function has the definition:
 ```julia
-Pattern(;benders=0, strengthened_benders=0, lagrangian=1)
+Pattern(;benders=0, strengthened_benders=0, integer_optimality=0, lagrangian=1)
 ```
 with, for example,
 ```
