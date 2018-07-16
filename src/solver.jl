@@ -20,23 +20,26 @@ end
 struct IncreasingPattern
     benders::Int
     strengthenedbenders::Int
+    integeroptimality::Int
     lagrangian::Int
 end
 """
-    Pattern(;benders=0, strengthened_benders=0, lagrangian=1)
+    Pattern(;benders=0, strengthened_benders=0, integer_optimality=0, lagrangian=1)
 
 Construct a cut pattern.
 
 # Example:
-Pattern(benders=0, strengthened_benders=1, lagrangian=4) means: in every cycle
-of 5 iterations, add 1 strengthened benders cut and 4 lagrangian cuts.
+Pattern(benders=0, strengthened_benders=1, integer_optimality=0, lagrangian=4)
+means: in every cycle of 5 iterations, add 1 strengthened benders cut and 4
+lagrangian cuts.
 """
-function Pattern(;benders=0, strengthened_benders=0, lagrangian=1)
-    @assert benders >= 0 && strengthened_benders >= 0 && lagrangian >= 0
+function Pattern(;benders=0, strengthened_benders=0, integer_optimality=0, lagrangian=1)
+    @assert benders >= 0 && strengthened_benders >= 0 && integer_optimality >= 0 && lagrangian >= 0
     strengthened_benders += benders
-    lagrangian += strengthened_benders
+    integer_optimality += strengthened_benders
+    lagrangian += integer_optimality
     @assert lagrangian > 0
-    IncreasingPattern(benders, strengthened_benders, lagrangian)
+    IncreasingPattern(benders, strengthened_benders, integer_optimality, lagrangian)
 end
 
 function getcuttype(iteration::Int, p::IncreasingPattern)
@@ -44,6 +47,8 @@ function getcuttype(iteration::Int, p::IncreasingPattern)
         return :benders
     elseif mod(iteration, p.lagrangian) + 1 <= p.strengthenedbenders
         return :strengthened_benders
+    elseif mod(iteration, p.lagrangian) + 1 <= p.integeroptimality
+        return :integer_opt
     else
         return :lagrangian
     end
@@ -79,6 +84,21 @@ function SDDiPsolve!(sp::JuMP.Model; require_duals::Bool=false, iteration::Int=-
             # Undo changes
             sp.obj = l.obj
             Lagrangian.recover!(l, sp, π)
+        elseif cuttype == :integer_opt
+            status = JuMP.solve(sp, ignore_solve_hook=true)
+            Q = getobjectivevalue(sp)
+            # Need a bound on the future cost at every point other than the
+            # current state. The cached problem bound will do.
+            L = SDDP.ext(sp).problembound
+            for s in SDDP.states(sp)
+                x0 = sp.linconstr[s.constraint.idx].terms.vars[1]
+                idx = s.constraint.idx
+                if getvalue(x0) > 0.5
+                    sp.linconstrDuals[idx] = Q - L
+                else
+                    sp.linconstrDuals[idx] = L - Q
+                end
+            end
         else
             # Update initial bound of the dual problem
             @assert solve(sp) == :Optimal
