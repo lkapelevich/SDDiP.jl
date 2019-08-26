@@ -6,6 +6,7 @@
 
 [![codecov.io](http://codecov.io/github/lkapelevich/SDDiP.jl/coverage.svg?branch=master)](http://codecov.io/github/lkapelevich/SDDiP.jl?branch=master)
 
+This repository contains old code moved to and maintained in [`SDDP.jl`](https://github.com/odow/SDDP.jl "SDDP.jl").
 
 SDDiP is a version of SDDP for integer local or state variables.
 If a model includes integer variables, we cannot compute cut coefficients in the way we normally do in SDDP (by querying duals from an LP solver). In SDDiP, each stage problem is solved via its Lagrangian dual in the backward pass.
