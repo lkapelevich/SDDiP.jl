@@ -1,5 +1,7 @@
 # SDDiP
 
+This code is no longer maintained.You should use https://github.com/odow/SDDP.jl instead, which supports integer variables.
+
 [![Build Status](https://travis-ci.org/lkapelevich/SDDiP.jl.svg?branch=master)](https://travis-ci.org/lkapelevich/SDDiP.jl)
 
 [![Coverage Status](https://coveralls.io/repos/lkapelevich/SDDiP.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/lkapelevich/SDDiP.jl?branch=master)
